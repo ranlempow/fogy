@@ -283,6 +283,18 @@ function getAllProperties(klass) {
     return [...props];
 }
 
+//#Source https://bit.ly/2neWfJ2
+const equals = (a, b) => {
+    if (a === b) return true;
+    if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+    if (!a || !b || (typeof a !== 'object' && typeof b !== 'object')) return a === b;
+    if (a === null || a === undefined || b === null || b === undefined) return false;
+    if (a.prototype !== b.prototype) return false;
+    let keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    return keys.every(k => equals(a[k], b[k]));
+};
+
 
 function renderer_proto(renderer) {
 
@@ -314,6 +326,14 @@ function renderer_proto(renderer) {
                     proto.init.call(this, ...args);
                 }
             }
+
+            _checkupdate(datanew, dataold, to, from) {
+                if (!this.isPure) return true;
+                if (this.checkUpate) return this.checkUpate(datanew, dataold);
+                if (this.hash) return this.hash(datanew) === this.hash(dataold);
+                return equals(datanew, dataold);
+            }
+
             render(frame, props, ...args) {
                 // TODO:
                 props = { frame: frame, global: frame?.global, ...props};
@@ -571,8 +591,10 @@ function handle_async(to, promise) {
 
 function get_render_async(frame, from, to, data, force_rerender) {
     // TODO: force_rerender?
+    // force_rerender = force_rerender === undefined ?
+    //                  (to.hash ? to.hash(data, from, to) : null) : force_rerender;
     force_rerender = force_rerender === undefined ?
-                     (to.hash ? to.hash(data, from, to) : null) : force_rerender;
+                    to._checkupdate(data, (from || to).core?.dataResolved) : force_rerender;
 
     if (to.asyncRendering) {
         if (force_rerender === true) {
@@ -721,6 +743,9 @@ class Seq {
         // TODO: need this?
         to.core.frame = frame;
 
+        // TODO: need this?
+        to.core.dataResolved = dataResolved;
+
         to._proc = {
             frame: frame,
             dataResolved,
@@ -772,7 +797,7 @@ class Seq {
             });
         }
         (p_proc?.frame || this.rootFrame).walk(this, slot, p_proc?.dataResolved,
-                                               this.renderQueue, slot);
+                                               this.renderQueue, slot, null, null);
         // let frame = resolve_frame(slot, p_proc?.frame || this.rootFrame);
         // let dataResolved = resolve_data(slot, p_proc?.dataResolved);
         // this.render_stages(frame, slot, slot, dataResolved);
@@ -892,22 +917,39 @@ class Frame {
         return this._local;
     }
 
-    static checkHash = (slot, data) => (slot.hash && slot.hash(data, slot, slot));
-
-    walk(seq, slot, data, queue, from) {
+    // static checkHash = (slot, data) => (slot.hash && slot.hash(data, slot, slot));
+    walk(seq, slot, data, queue, from, parentSlot, key) {
+        if (parentSlot) {
+            if (!slot.parentNode || parentSlot.slots[key] !== slot) {
+                // dont walk detached slot
+                delete parentSlot.slots[key];
+                return;
+            }
+        }
+        return this._walk(seq, slot, data, queue, from);
+    }
+    _walk(seq, slot, data, queue, from) {
         let slots, dataResolved, frame;
         frame = resolve_frame(slot, this);
         if (seq.renderEntries?.size && slot.isEntry && !seq.renderEntries.has(slot)) {
             seq.slotStack.set(slot, { frame, dataResolved });
-            for (const s of Object.values(slot.slots)) {
+            for (const [key, s] of Object.entries(slot.slots)) {
+                if (!s.parentNode) {
+                    // dont walk detached slot
+                    delete slots[key];
+                    continue;
+                }
                 if (!s.isEntry) continue;
-                frame.walk(seq, s, null, queue, s);
+                frame.walk(seq, s, null, queue, s, slot, key);
             }
             seq.slotStack.delete(slot);
         } else if (!slot._proc?.oldSlots &&
             (queue && queue.has(slot)) ||
-            (slot.isPure &&
-             Frame.checkHash(slot, dataResolved = resolve_data(data, slot.getter))) ||
+            // (slot.isPure &&
+            (slot._checkupdate &&
+             slot._checkupdate(dataResolved = resolve_data(data, slot.getter),
+                               (from || slot).core?.dataResolved)) ||
+             // Frame.checkHash(slot, dataResolved = resolve_data(data, slot.getter))) ||
             !queue
            ) {
             dataResolved ||= resolve_data(data, slot.getter);
@@ -920,7 +962,7 @@ class Frame {
             // resovle children, use `from` children, or make new children
             for (const [key, s] of slots) {
                 from = slot._proc?.oldSlots ? slot._proc.oldSlots[key] : s;
-                frame.walk(seq, s, dataResolved, queue, from);
+                frame.walk(seq, s, dataResolved, queue, from, slot, key);
             }
             // seq.slotStack.delete(slot);
         }
@@ -952,7 +994,8 @@ class Frame {
         if ((slots = Object.entries(to.slots)).length > 0) {
             for (const [key, s] of slots) {
                 let from = to._proc.oldSlots[key] || s;
-                to._proc.frame.walk(seq, to, to._proc.dataResolved, seq.renderQueue, from);
+                to._proc.frame.walk(seq, s, to._proc.dataResolved,
+                                    seq.renderQueue, from, to, key);
             }
         }
 
@@ -1038,7 +1081,7 @@ function mount(renderer, target, {automount = true} = {}) {
             if (slot.renderer === renderer.renderer) {
                 // change getter
                 slot.getter = renderer.getter;
-                if (update.auto) update(slot);
+                if (automount && update.auto) update(slot);
                 return slot;
             } else {
                 // remount
@@ -1069,7 +1112,9 @@ function mount(renderer, target, {automount = true} = {}) {
     if (isRenderer(renderer)) {
         slot = mount_into(target, renderer?.renderer || renderer,
                           renderer.getter, key, to, position);
-        if (automount && update.auto) update(slot);
+        if (automount && update.auto) {
+            update(slot);
+        }
     } else {
         // renderer is normal hvalue
         slot = mount_into(target, () => renderer, null, key, to, position);
