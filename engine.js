@@ -61,8 +61,8 @@ const _html = (strings, ...args) => strings.flatMap(
 
 const _make_renderer_hvalue = (renderer, key, getter) => {
     const x = function(arg1, arg2) {
-        let [key, getter] = (arg2 === undefined ? [ this.key, arg1 ] : [ arg1, arg2 ]);
-        return _make_renderer_hvalue(this.renderer, key, getter);
+        let [_key, _getter] = (arg2 === undefined ? [ key, arg1 ] : [ arg1, arg2 ]);
+        return _make_renderer_hvalue(renderer, _key, _getter);
     }
     x.renderer = renderer;
     x.key = key;
@@ -71,14 +71,15 @@ const _make_renderer_hvalue = (renderer, key, getter) => {
 }
 
 const _template = (text) => {
-    let tpl = create('template');
+    let tpl = document.createElement('template');
     tpl.innerHTML = text;
     return tpl.content;
 }
 
 function h(e, ...args) {
     const assertArgsZero = () => console.assert(args.length === 0);
-    const create = document.createElement;
+    const create = (...args) => document.createElement(...args);
+
     if (e === 'fragment') {
         if (args.length === 1 && args[0] instanceof DocumentFragment) {
             return args[0];
@@ -95,7 +96,7 @@ function h(e, ...args) {
         return _html(e, ...args);
         // return Object.create(h.prototype, {_html: _html(e, ...args)});
     } else if (e === 'template') {
-        return h('fragment', args.map(n => {
+        return h('fragment', ...args.map(n => {
             return typeof n === 'string' ? _template(n) :
                    node instanceof NodeList ? h('fragment', node) :
                    node.renderer ? _template(_renderer_to_slothtml(node)) : n;
@@ -107,8 +108,10 @@ function h(e, ...args) {
         } else {
             let m, string = e;
             e = null;
-            while(m = string.match(/([> ]*(?!$)|\[([^\]=]+)(?:=([^\]]+))?\]|(?:.)[^\[\.#]+)/)) {
-                string = string.substring(m.lastIndex);
+            // while(m = string.match(/([> ]*(?!$)|\[([^\]=]+)(?:=([^\]]+))?\]|(?:.)[^\[\.#]+)/)) {
+            while(m = string.match(/(\[([^\]=]+)(?:=([^\]]+))?\]|(?:.)[^\[\.#]+)/)) {
+                if (m[0].length === 0) break;
+                string = string.substring(m[0].length);
                 switch(m[1][0]) {
                     case ' ':
                     case '>': return h(e || 'div', h(string, ...args));
@@ -123,14 +126,14 @@ function h(e, ...args) {
     let func, children;
     if (args[0] && args[0] === h) {
         args.shift();
-        func = e.append;
+        func = (...x) => e.append(...x);
     } else if (args[args.length-1] && args[args.length-1] === h) {
         args.pop();
-        func = e.prepend;
+        func = (...x) => e.prepend(...x);
     } else {
         // children = e.childNodes?.length ? h(fragment, ...e.childNodes) : null;
         children = e.childNodes || null;
-        func = e.append;
+        func = (...x) => e.append(...x);
     }
     func(...args.flatMap(l => {
         if (l === h) {
@@ -141,6 +144,9 @@ function h(e, ...args) {
             return l;
             // return e instanceof DocumentFragment ? l : document.createTextNode(l);
         } else if (l instanceof NodeList) {
+            return l;
+        // } else if (l instanceof CharacterData) {
+        } else if (l instanceof Node) {
             return l;
         } else if ('object' === typeof l && l) {
             if (!(e instanceof Element)) return;
@@ -178,7 +184,7 @@ h.html = function (...args) { return h(args); }
 
 function* selectAll(slot) {
     let current = slot;
-    while ((current = current.nextSibling) !== slot.endslot) yield current;
+    while ((current = current.nextSibling) !== slot.endslot && current) yield current;
 }
 
 
@@ -186,7 +192,7 @@ function* selectAll(slot) {
 class WeakSlotSet extends Set {
     add(v) {
         console.assert(v?.core?.slot);
-        super.add(slot.core);
+        super.add(v.core);
     }
     *values() {
         for (const core of super.values()) {
@@ -206,7 +212,7 @@ const make_handler = (isCapture) => function handler(e) {
     let p = e.currentTarget;
     let registers = p[`${isCapture}Registers`][e.type];
     let triggers = new Set();
-    for (const slot of registers || []) {
+    for (const slot of registers ? registers.values() : []) {
         for (const [selector, isMethod, t, capture] of slot.events[e.type] || []) {
             if ( (capture ? e.eventPhase <= 2 : e.eventPhase >= 2 ) &&
                  (selector === 'window' && p === window) ||
@@ -235,15 +241,21 @@ function installEvents(slot) {
     // install event handler in parent
     let p = slot?.parentElement;
     if (!p) return;
-    for (const [eventType, [selector, isMethod, t, capture]] of Object.entries(slot.events)) {
-        let isCapture = capture ? 'capture' : 'bubble';
-        let pp = selector === 'window' || selector === 'document' ? window[selector] : p;
-        let registers = pp[`${isCapture}Registers`] ||= {};
-        if (!registers[eventType]) {
-            registers[eventType] = new WeakSlotSet();
-            pp.addEventListener(eventType, handlers[isCapture], capture);
+    for (const [eventType, events] of Object.entries(slot.events)) {
+        for (const [selector, isMethod, t, capture] of events) {
+            let isCapture = capture ? 'capture' : 'bubble';
+            let pp = selector === 'window' || selector === 'document' ? window[selector] : p;
+            let registers = pp[`${isCapture}Registers`] ||= {};
+            if (!registers[eventType]) {
+                registers[eventType] = new WeakSlotSet();
+                let options = {capture};
+                if (eventType === 'scroll' || eventType === 'resize') {
+                    options.passive = true;
+                }
+                pp.addEventListener(eventType, handlers[isCapture], options);
+            }
+            registers[eventType].add(slot);
         }
-        registers[eventType].add(slot);
     }
 }
 
@@ -263,6 +275,13 @@ function nearestSlot(node) {
     }
 }
 
+function getAllProperties(klass) {
+    const props = new Set();
+    do {
+        Object.getOwnPropertyNames(klass).forEach(k => props.add(k));
+    } while (klass = Object.getPrototypeOf(klass));
+    return [...props];
+}
 
 
 function renderer_proto(renderer) {
@@ -286,11 +305,20 @@ function renderer_proto(renderer) {
     let attrs = cache.get(cachekey);
     if (!attrs) {
         class _attrs extends Comment {
+            constructor(...args) {
+                super(...args);
+                // if (proto?.constructor) {
+                //     proto.constructor.call(this, ...args);
+                // }
+                if (proto?.init) {
+                    proto.init.call(this, ...args);
+                }
+            }
             render(frame, props, ...args) {
                 // TODO:
                 props = { frame: frame, global: frame?.global, ...props};
                 return this.isInstance ? this.instance.render(props, ...args) :
-                       (proto.render || renderer).call(this, props, ...args);
+                       (proto?.render || renderer).call(this, props, ...args);
             }
             // shouldUpdate(from, slot) {}
             // toString() {
@@ -343,30 +371,58 @@ function renderer_proto(renderer) {
                 renderer.constructor.name : renderer.name;
         attrs.prototype.renderer = renderer;
         attrs.prototype.isInstance = isInstance;
-        isInstance || Object.assign(attrs.prototype, proto);
-
-        function make_events(obj, target, isMethod) {
-            let events = {...target.events,
-                          ...Object.fromEntries(Object.entries(target)
-                                    .filter(k => /^on\W{2}.+/.test(k))
-                                    .map((k, v) => [k.slice(2), v]))};
-            for (let [eventType, handler] of Object.entries(events)) {
-                let [eventType, ...selector] = eventType.split(' ');
-                selector = selector.join('');
-                let capture = false;
-                if (eventType.startsWith('+')) {
-                    capture = true
-                    eventType = eventType.slice(1);
-                }
-                eventType = eventType.toLowerCase();
-                (obj[eventType] ||= []).push([
-                    selector || null, isMethod, handler, capture
-                ])
+        if (proto) {
+            for (const key of getAllProperties(proto)) {
+                if(!Object.getOwnPropertyDescriptor(proto, key)) continue;
+                if(key === 'constructor') continue;
+                attrs.prototype[key] = proto[key];
             }
         }
+
+
+        function build_events(obj, events, isMethod) {
+            for (let [key, handler] of Object.entries(events)) {
+                let [names, ...selector] = key.split(' ');
+                selector = selector.join('');
+                let capture = false;
+                for (let eventType of names.split('/')) {
+                    if (eventType.startsWith('+')) {
+                        capture = true
+                        eventType = eventType.substring(1);
+                    }
+                    // eventType = eventType.toLowerCase();
+                    if (eventType.startsWith('on')) {
+                        eventType = eventType.substring(2);
+                    }
+                    (obj[eventType] ||= []).push([
+                        selector || null, isMethod, handler, capture
+                    ])
+                }
+            }
+        }
+
+        // function make_events(obj, target, isMethod) {
+        //     let events = {...target.events,
+        //                   ...Object.fromEntries(getAllProperties(target)
+        //                             .filter(k => /^\+?on\w{2}.+/.test(k))
+        //                             .map(k => [k, target[k]]))};
+        // }
+
         let events = {};
-        proto && make_events(events, proto, false);
-        make_events(events, renderer, true);
+        if (proto) {
+            if (typeof proto.events === 'object') {
+                build_events(events, proto.events, false);
+            }
+            let props = Object.fromEntries(getAllProperties(proto)
+                                    .filter(k => /^\+?on\w{2}.+/.test(k))
+                                    .map(k => [k, proto[k]]))
+            build_events(events, props, true);
+        }
+        if (typeof renderer.events === 'object') {
+            build_events(events, renderer.events, true);
+        }
+        // proto && make_events(events, proto, false);
+        // make_events(events, renderer, true);
         attrs.prototype.events = Object.freeze(events);
         cache.set(cachekey, attrs);
 
@@ -455,7 +511,8 @@ function mount_into(target, renderer, getter, key, to, position = 'replace') {
         // }
         sloting(target, position, n1);
         to.slots[key] = n1;
-        installEvents(to);
+        // installEvents(to);
+        installEvents(n1);
     }
     return n1;
 }
@@ -512,7 +569,7 @@ function handle_async(to, promise) {
 }
 
 
-function get_render_async(from, to, data, force_rerender) {
+function get_render_async(frame, from, to, data, force_rerender) {
     // TODO: force_rerender?
     force_rerender = force_rerender === undefined ?
                      (to.hash ? to.hash(data, from, to) : null) : force_rerender;
@@ -525,7 +582,7 @@ function get_render_async(from, to, data, force_rerender) {
                 delete to.core.asyncIterator;
             }
             delete to.core.asyncRendering;
-            return get_render_async(from, to, data, force_rerender);
+            return get_render_async(frame, from, to, data, force_rerender);
         } else {
             return handle_async(to);
         }
@@ -534,7 +591,7 @@ function get_render_async(from, to, data, force_rerender) {
     } else {
         let result, exp;
         try {
-            result = to.render(data, from, to);
+            result = to.render(frame, data, from, to);
         } catch (e) {
             exp = e;
         }
@@ -660,7 +717,11 @@ class Seq {
             Object.assign(to, from);
             to.core.slot = to;
         }
-        to._proc = this.slotStack[to] = {
+
+        // TODO: need this?
+        to.core.frame = frame;
+
+        to._proc = {
             frame: frame,
             dataResolved,
             dataPass: { from, frame:frame, global: frame.global, ...dataResolved },
@@ -668,11 +729,14 @@ class Seq {
             _already_attach_hvalue: false,
             _already_render_children: false,
         }
+        this.slotStack.set(to, to._proc);
 
-        let [hvalue, exc] = get_render_async(from, to, to._proc.dataPass);
+        let [hvalue, exc] = get_render_async(frame, from, to, to._proc.dataPass);
         if (exc) {
             to.onerror && to.onerror(exc);
             to.dispatchEvent(new CustomEvent('RenderError', { detail: { error: exc } }));
+            // TODO:
+            throw exc;
         } else if (!to._proc?._already_attach_hvalue) {
             frame.render_stage_attach_hvalue(from, to, hvalue);
         }
@@ -695,7 +759,7 @@ class Seq {
         let stack = [];
         let p_proc, p;
         while (p = slot.nearestSlot) {
-            if (this.slotStack.contains(p)) {
+            if (this.slotStack.has(p)) {
                 p_proc = this.slotStack.get(p);
                 break;
             }
@@ -707,13 +771,12 @@ class Seq {
                 dataResolved: resolve_data(p_proc?.dataResolved, s.getter),
             });
         }
-
         (p_proc?.frame || this.rootFrame).walk(this, slot, p_proc?.dataResolved,
                                                this.renderQueue, slot);
         // let frame = resolve_frame(slot, p_proc?.frame || this.rootFrame);
         // let dataResolved = resolve_data(slot, p_proc?.dataResolved);
         // this.render_stages(frame, slot, slot, dataResolved);
-        stack.forEach(this.slotStack.delete);
+        stack.forEach(x => this.slotStack.delete(x));
     }
 
     render2(slot) {
@@ -829,7 +892,7 @@ class Frame {
         return this._local;
     }
 
-    checkHash = (slot, data) => slot.hash && slot.hash(data, slot, slot);
+    static checkHash = (slot, data) => (slot.hash && slot.hash(data, slot, slot));
 
     walk(seq, slot, data, queue, from) {
         let slots, dataResolved, frame;
@@ -844,7 +907,7 @@ class Frame {
         } else if (!slot._proc?.oldSlots &&
             (queue && queue.has(slot)) ||
             (slot.isPure &&
-             checkHash(slot, dataResolved = resolve_data(data, slot.getter))) ||
+             Frame.checkHash(slot, dataResolved = resolve_data(data, slot.getter))) ||
             !queue
            ) {
             dataResolved ||= resolve_data(data, slot.getter);
@@ -866,9 +929,9 @@ class Frame {
     render_stage_attach_hvalue(from, to, hvalue) {
         if (to._proc?._already_render_children) return;
         to._proc && (to._proc._already_attach_hvalue = true);
-
         if (hvalue !== undefined) {
             let frag = resolve_slot(to, h('template', hvalue));
+            // let frag = resolve_slot(to, hvalue);
             moveSlot(to, null, null, frag);
         } else if (from !== to) {
             let frag = h('fragment', ...selectAll(from));
@@ -915,16 +978,20 @@ Frame.mainSeq = new Seq(Frame.rootFrame, true);
 const isRenderer = (renderer) => typeof renderer === 'function' || renderer?.renderer;
 
 function resolve_target(target, position = null) {
+    let p, t;
     if (Array.isArray(target)) {
         [position, target] = target;
-    } else if (target && (position = Object.keys(target)[0]) &&
-                         (target = target[position]) instanceof Node) {
+    } else if (target && (p = Object.keys(target)[0]) &&
+                         (t = target[p]) instanceof Node) {
+        target = t;
+        position = p;
     } else {
         // return [null, null];
     }
     if (typeof target === 'string') {
-        target = document.querySelector(target);
-        if (!target) throw new Error(`element '${target}' not found`);
+        let element = document.querySelector(target);
+        if (!element) throw new Error(`element '${target}' not found`);
+        target = element;
     }
     return [target, position];
 }
@@ -943,7 +1010,7 @@ function resolve_target(target, position = null) {
 // mount(renderer, {headOf: document});
 // mount(renderer, {headOf: 'element-id'});
 
-function mount(renderer, target) {
+function mount(renderer, target, {automount = true} = {}) {
     let position, key;
     // if (target === 'fragment') {
     //     let frag;
@@ -959,12 +1026,15 @@ function mount(renderer, target) {
         [target, position] = resolve_target(target);
         moveSlot(slot, position, target)
         return slot;
-    } else if (target === null) {
-        [target, position, key] = renderer.renderer.defaultMount;
+    // } else if (target === null) {
+    } else if (!target && renderer?.defaultMount) {
+        // [target, position, key] = renderer.renderer.defaultMount;
+        [target, position, key] = renderer.defaultMount;
         [target, position] = resolve_target(target, position);
     } else if (target.slots) {
         let slot = target;
         if (isRenderer(renderer)) {
+            // TODO: renderer.renderer???
             if (slot.renderer === renderer.renderer) {
                 // change getter
                 slot.getter = renderer.getter;
@@ -995,8 +1065,16 @@ function mount(renderer, target) {
         to = mount.defaultToplevel;
         to.slots ||= {};
     }
-    let slot = mount_into(target, renderer.renderer, renderer.getter, key, to, position);
-    if (update.auto) update(slot);
+    let slot;
+    if (isRenderer(renderer)) {
+        slot = mount_into(target, renderer?.renderer || renderer,
+                          renderer.getter, key, to, position);
+        if (automount && update.auto) update(slot);
+    } else {
+        // renderer is normal hvalue
+        slot = mount_into(target, () => renderer, null, key, to, position);
+    }
+
     return slot;
 }
 
@@ -1030,6 +1108,7 @@ mount.defaultToplevel = document.firstChild;
 
 function render(renderer, target) {
     let slot;
+    let removeSlot = false;
     [renderer, target] = renderer?.slots ? [undefined, renderer] : [renderer, target];
     if (target?.slots) {
         slot = target;
@@ -1041,12 +1120,14 @@ function render(renderer, target) {
             return;
         } else if (renderer !== undefined) {
             // renderer is any hValue?
-            mount(renderer, slot);
+            mount(renderer, slot, {automount: false});
         }
     } else if (target) {
-        slot = mount(renderer, target);
+        slot = mount(renderer, target, {automount: false});
+        removeSlot = true;
     } else if (renderer) {
-        slot = mount(renderer, 'fragment');
+        // TODO: 這功能還沒做完，mount不會接受fragment作為target
+        slot = mount(renderer, 'fragment', {automount: false});
         (new Seq()).render2(slot);
         return slot.parentNode;
     } else {
@@ -1057,6 +1138,11 @@ function render(renderer, target) {
     } else {
         (new Seq()).render2(slot);
     }
+    if (removeSlot) {
+        slot.parentElement.removeChild(slot.endslot);
+        slot.parentElement.removeChild(slot);
+    }
+    return slot;
 }
 
 

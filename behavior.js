@@ -1,66 +1,3 @@
-<!DOCTYPE html>
-
-<html lang="en-us">
-<head>
-<meta charset="utf-8">
-<style>
-body {
-    /*margin: 0px;*/
-}
-#container2 {
-    overflow: scroll;
-    height: 400px;
-    width: 400px;
-}
-
-#container {
-    position: relative;
-    overflow: scroll;
-    height: 600px;
-    width: 600px;
-}
-
-#button {
-    position: relative;
-    left: 600px;
-    top: 600px;
-}
-#button2 {
-    position: relative;
-    left: 1000px;
-    top: 1000px;
-}
-#tooltip {
-    position: absolute;
-    background: #222;
-    color: white;
-    font-weight: bold;
-    padding: 20px;
-    border-radius: 4px;
-    font-size: 90%;
-    pointer-events: none;
-}
-
-
-</style>
-
-
-</head>
-<body>
-    <div id="container2">
-    <div id="container">
-        <button id="button" aria-describedby="tooltip">
-            My button
-        </button>
-        <button id="button2">
-            My button2
-        </button>
-        <div id="tooltip" role="tooltip">My tooltip</div>
-    </div>
-    </div>
-
-
-<script type="text/javascript">
 
 function computePos(src_size, dest, options) {
     options = options || {};
@@ -97,14 +34,15 @@ function computePos(src_size, dest, options) {
 }
 
 const mergeRect = (r1, r2) => {
-    let left =   Math.max(r1.left, r2.left);
-    let top =    Math.max(r1.top, r2.top);
-    let right =  Math.min(r1.right, r2.right);
-    let bottom = Math.min(r1.bottom, r2.bottom);
+    // r2 在 r1 中的相交區域
+    let left =   Math.min(r1.right, Math.max(r1.left, r2.left));
+    let top =    Math.min(r1.bottom, Math.max(r1.top, r2.top));
+    let right =  Math.max(r1.left, Math.min(r1.right, r2.right));
+    let bottom = Math.max(r1.top, Math.min(r1.bottom, r2.bottom));
     return {
         left, top, right, bottom,
-        width: right - left,
-        height: bottom - top,
+        width: Math.abs(right - left),
+        height: Math.abs(bottom - top),
     }
 };
 
@@ -116,33 +54,50 @@ const isRectHasVolumn = (r1) => !(r1.width == 0 && r1.height == 0);
 
 function* getAncestors(element, condition, attribute) {
     let ancestor;
-    while(ancestor = (ancestor || target)[attribute || 'parentElement']) {
-        (!condition || condition(ancestor)) && yield ancestor;
+    while(ancestor = (ancestor || element)[attribute || 'parentElement']) {
+        if (!condition || condition(ancestor)) {
+            yield ancestor;
+        }
     }
 }
 
-function getViewport(target) {
-    let ancestors = getAncestors(target).filter(a => {
+function getViewport(target, depth) {
+    if (target.tagName === 'BODY') {
+        return { closestAncestor: null,
+                 viewport: target.getBoundingClientRect()};
+    }
+    let ancestors = [...getAncestors(target)].filter(ancestor => {
         const {overflow, overflowX, overflowY} = window.getComputedStyle(ancestor);
         return ancestor.tagName === 'BODY' ||
                /auto|scroll|overlay|hidden/.test(overflow + overflowY + overflowX);
     });
-    let viewport = ancestors.map(el => el.getBoundingClientRect()).reduce(
-        mergeRect, {left:-NaN, right: NaN, top: -NaN, bottom:NaN},
+    console.assert(ancestors.length > 0)
+    if (depth) {
+        ancestors = ancestors.slice(0, depth);
+    }
+    ancestors.reverse();
+    let viewports = ancestors.map(el => el.getBoundingClientRect());
+    let viewport = viewports.reduce(
+        mergeRect, {left:-Infinity, right: Infinity, top: -Infinity, bottom:Infinity},
     );
     return { closestAncestor: ancestors[ancestors.length-1], viewport };
 }
 
-function isInViewport(target) {
-    let r1 = target.getBoundingClientRect();
-    return isRectVisible(r1) &&
-           isRectHasVolumn(mergeRect(r1, getViewport(target).viewport));
+function viewportRatio(target, depth) {
+    let boundingClientRect = target.getBoundingClientRect();
+    let intersectionRect = mergeRect(getViewport(target, depth).viewport, boundingClientRect);
+    return [intersectionRect, boundingClientRect];
+}
+
+function isInViewport(target, depth) {
+    const [intersectionRect, boundingClientRect] = viewportRatio(target, depth);
+    return isRectVisible(boundingClientRect) &&
+           isRectHasVolumn(intersectionRect);
 }
 
 
 function computePosition(target, describedby, options) {
-    let closest_ancestor = getViewport(target);
-    let viewport = closest_ancestor.viewport;
+    let {closestAncestor, viewport} = getViewport(target);
     let source = describedby.getBoundingClientRect();
     let dest = target.getBoundingClientRect();
 
@@ -161,7 +116,8 @@ function computePosition(target, describedby, options) {
                     cross: try_cross,
                 });
                 let [width, height] = [source.width, source.height];
-                if (isRectHasVolumn(mergeRect({left:x, top:y, width, height}, viewport))) {
+                if (isRectHasVolumn(mergeRect(viewport, {left:x, top:y, width, height},
+                                              ))) {
                     return {x, y};
                 }
                 // if (x >= viewport.left && x + source.width <= viewport.right &&
@@ -191,8 +147,8 @@ function computePosition(target, describedby, options) {
     let [relativeOffsetX, relativeOffsetY] = [0, 0];
     if (window.getComputedStyle(describedby).position !== 'fixed') {
         [relativeOffsetX, relativeOffsetY] =
-          [closest_ancestor.scrollLeft - closest_ancestor.getBoundingClientRect().left,
-           closest_ancestor.scrollTop - closest_ancestor.getBoundingClientRect().top];
+          [closestAncestor.scrollLeft - closestAncestor.getBoundingClientRect().left,
+           closestAncestor.scrollTop - closestAncestor.getBoundingClientRect().top];
     }
     let result = {
         x: x + relativeOffsetX,
@@ -202,33 +158,169 @@ function computePosition(target, describedby, options) {
 }
 
 
-// TODO? 順便利用IntersectionObserver做出ScrollSpy的效果
+function process_scrollspy(root) {
+    // 使用方式:
+    // 對標題選單加入 <div class="menu" data-scrollspy=[CONTAONER_ID]>
+    // 或是，對容器加入 <div class="container" data-scrollspy="self">
 
-let root_observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-        entry.target.isIntersecting = entry.isIntersecting;
-    });
-    process_fixedpos();
-})
-root_observer.elements = new WeakSet();
 
-function ensure_ob(el) {
-    if (!root_observer.elements.has(el)) {
-        root_observer.observe(el);
-        root_observer.elements.add(el);
-        return false;
+    // 可滾動內容與鍵盤相容性:
+    // 如果要製作可滾動容器（<body> 除外，
+    // 請確定已經設定 height 和 overflow-y: scroll; 旁邊帶有 tabindex="0"，以確保鍵盤相容性。
+
+
+    let containers = new Map();
+    for (let menu of root.querySelectorAll('[data-scrollspy]')) {
+        let id = menu.dataset.scrollspy;
+        let container = null;
+        if (id === 'self') {
+            [container, menu] = [menu, null];
+        } else if (id) {
+            container = root.getElementById(id);
+        }
+        if (container) {
+            let menus = containers.get(container);
+            if (!menus) {
+                menus = [];
+                containers.set(container, menus);
+            }
+            if (menu) {
+                menus.push(menu);
+            }
+        }
     }
-    return el.isIntersecting !== undefined;
+    const changes = [];
+    for (const [container, menus] of containers.entries()) {
+        let winner = {
+            target: null,
+            link_elements: null,
+            ratio: 0,
+            top: Infinity,
+            left: Infinity,
+        };
+        let change = {
+            all_links: [],
+            targets: [],
+            winner
+        };
+        changes.push(change)
+
+        function set_winner(target, ratio, top, left, menu_elements) {
+            winner.target = target;
+            winner.ratio = ratio;
+            winner.top = top;
+            winner.left =left;
+            winner.menu_elements = menu_elements;
+        }
+
+        for (const target of container.querySelectorAll(':scope > [id]')) {
+            let menu_elements = menus.flatMap(m =>
+                        [...menu.querySelectorAll(`[href="#${target.id}"]`)]);
+            change.all_links.push(...menu_elements);
+
+            let ratio = 0;
+            if (isInViewportFast(target)) {
+                // 與overflow的比例，而不是與viewport的比例
+                // depth = 1
+                const [intersectionRect, boundingClientRect] =
+                    viewportRatioFast(target);
+
+                ratio = Math.abs(intersectionRect.width * intersectionRect.height) /
+                        Math.abs(boundingClientRect.width * boundingClientRect.height);
+                // console.log(target, ratio,
+                //             [intersectionRect.width, intersectionRect.height],
+                //             [boundingClientRect.width, boundingClientRect.height]);
+                if (ratio > winner.ratio) {
+                    set_winner(target, ratio,
+                               intersectionRect.top, intersectionRect.left,
+                               menu_elements);
+                } else if (ratio == winner.ratio) {
+                    if (intersectionRect.top < winner.top) {
+                        set_winner(target, ratio,
+                               intersectionRect.top, intersectionRect.left,
+                               menu_elements);
+                    }
+                }
+            }
+            change.targets.push(target);
+        }
+    }
+
+    for (const change of changes) {
+        for (const target of change.targets) {
+            target.classList.remove('active');
+        }
+        for (const link of change.all_links) {
+            link.classList.remove('active');
+            // link.removeAttribute('aria-selected');
+        }
+        if (change.winner.target) {
+            for (const link of change.winner.menu_elements) {
+                link.classList.add('showed');
+                link.classList.add('active');
+                // link.setAttribute('aria-selected', 'true');
+            }
+            change.winner.target.classList.add('showed');
+            change.winner.target.classList.add('active');
+        }
+    }
 }
 
-function process_fixedpos() {
-    document.body.fp_target = document.body;
+
+
+
+// let root_observer = new IntersectionObserver(entries => {
+//     entries.forEach(entry => {
+//         entry.target.isIntersecting = entry.isIntersecting;
+//         entry.target.intersectionRect = entry.intersectionRect;
+//         entry.target.boundingClientRect = entry.boundingClientRect;
+//     });
+//     process_fixedpos();
+// })
+// root_observer.elements = new WeakSet();
+
+// function ensure_ob(el) {
+//     if (!root_observer.elements.has(el)) {
+//         root_observer.observe(el);
+//         root_observer.elements.add(el);
+//         return false;
+//     }
+//     return el.isIntersecting !== undefined;
+// }
+const ensure_ob = null;
+
+// 分成有加入IntersectionObserver與還沒加入IntersectionObserver的模式
+const isInViewportFast = el =>
+    ensure_ob && ensure_ob(el) ? el.isIntersecting :
+            // fast path
+            // 利用IntersectionObserver的結果，快速剔除不在螢幕中的元素
+    isInViewport(el);   // slow path
+                        // 必須要自己與所有父元素都沒有設定display:none，才能滿足可視性探測
+
+const viewportRatioFast = el => ensure_ob && ensure_ob(el) ?
+                                [ el.intersectionRect, el.boundingClientRect ] :
+                                viewportRatio(el, 1);
+
+
+function process_fixedpos(root) {
+    // 使用方式:
+    // 對於要浮動的元件加入 data-fixedpos[=TARGET]
+    // 未設定TARGET時，對齊上一個元素
+    // TARGET="parent"時，對齊父元素
+    // TARGET="#<ID>"時，對齊該元素
+    // TARGET="<SELECTOR>"，對齊浮動元素底下的特定元素
+
+
+    root.body.fp_target = root.body;
+
     // 選取兩端元素
     let s = new Set();
-    for (const fp_source of e.querySelectorAll('[data-fixedpos]')) {
+    for (const fp_source of root.querySelectorAll('[data-fixedpos]')) {
         let fp_target = !fp_source.dataset.fixedpos ? fp_source.previousElementSibling :
                          fp_source.dataset.fixedpos === 'parent' ? fp_source.parentElement :
-                         fp_source.querySelector(fp_source.dataset.fixedpos);
+                         fp_source.dataset.fixedpos.startsWith('#') ?
+                            root.getElementById(fp_source.dataset.fixedpos.slice(1)) :
+                            fp_source.querySelector(fp_source.dataset.fixedpos);
         if (fp_target) {
             fp_source.fp_target = fp_target;
             s.add(fp_source);
@@ -243,250 +335,293 @@ function process_fixedpos() {
         (fp_target.fp_children ||= []).push(el);
     }
 
-    // 分成有加入IntersectionObserver與還沒加入IntersectionObserver的模式
-    const isInViewportFast = el =>
-        (ensure_ob(el) && el.isIntersecting) ||
-                // fast path
-                // 利用IntersectionObserver的結果，快速剔除不在螢幕中的元素
-        isInViewport(el);   // slow path
-                            // 必須要自己與所有父元素都沒有設定display:none，才能滿足可視性探測
-
     function delete_one(el) {
         (el.fp_children || []).forEach(delete_one);
         delete el.fp_target;
         delete el.fp_children;
     }
 
-    // TODO: 改用廣度優先演算法，並且批次設定el.style，以顯著減少reflow次數
-    (function process_one(el) {
-        if (!isInViewportFast(el)) {
-            // 必須沒有被捲動到任何viewport之外，才能滿足範圍探測，否則剪枝
-            return delete_one(el);
-            // 4.如果父端被剔除，子端也會被剔除。被剔除的子端標記data-fixedpos-target-offscreen=true
+    // 廣度優先演算法，並且批次設定el.style，以顯著減少reflow次數
+    function bfs() {
+        let stack = [root.body];
+        while (stack.length > 0) {
+            const changes = [];
+            const next_stack = [];
+            for (const el of stack) {
+                if (!isInViewportFast(el)) {
+                    // 必須沒有被捲動到任何viewport之外，才能滿足範圍探測，否則剪枝
+                    delete_one(el);
+                    // 4.如果父端被剔除，子端也會被剔除。被剔除的子端標記data-fixedpos-target-offscreen=true
 
-            // TODO: 無法顯示時，自動關閉 --collapse-on-target-disappear
-            // 目標離開視野 (這個計算可能會有點複雜?) 必須要監測scroll resize
-            // TODO: 目標關閉時 `display: none` (因此可以循環進行)
-
-        }
-        if (el.dataset.fixedpos) {
-            let style = getComputedStyle(el);
-            let options = {
-                axis: style.getPropertyValue('--fixedpos-axis'),
-                main: style.getPropertyValue('--fixedpos-main'),
-                cross: style.getPropertyValue('--fixedpos-cross'),
-                closeup: style.getPropertyValue('--fixedpos-closeup'),
-                offset: style.getPropertyValue('--fixedpos-offset'),
+                    // TODO: 無法顯示時，自動關閉 --collapse-on-target-disappear
+                    // 目標離開視野 (這個計算可能會有點複雜?) 必須要監測scroll resize
+                    // TODO: 目標關閉時 `display: none` (因此可以循環進行)
+                    continue
+                }
+                if (el.dataset.fixedpos !== undefined) {
+                    let style = getComputedStyle(el);
+                    let options = {
+                        axis: style.getPropertyValue('--fixedpos-axis'),
+                        main: style.getPropertyValue('--fixedpos-main'),
+                        cross: style.getPropertyValue('--fixedpos-cross'),
+                        closeup: style.getPropertyValue('--fixedpos-closeup'),
+                        offset: style.getPropertyValue('--fixedpos-offset'),
+                    }
+                    let {x, y} = computePosition(el.fp_target, el, options);
+                    changes.push({el, x, y});
+                }
+                next_stack.push(...(el.fp_children || []));
+                delete el.fp_target;
+                delete el.fp_children;
             }
-            // let {x, y} = computePosition(el, el.fp_target, options);
-            let {x, y} = computePosition(el.fp_target, el, options);
-            el.style.left = `${x}px`;
-            el.style.top = `${y}px`;
+
+            for (const {el, x, y} of changes) {
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+            }
+            stack = next_stack;
         }
-        (el.fp_children || []).forEach(process_one);
-        delete el.fp_target;
-        delete el.fp_children;
-    })(document.body);
+    }
+
+    bfs();
 }
 
 
 
 
-
-// const button = document.querySelector('#button');
-// const tooltip = document.querySelector('#tooltip');
-
-// function f() {
-//     let {x, y} = computePosition(button, tooltip);
-//     Object.assign(tooltip.style, {
-//         left: `${x}px`,
-//         top: `${y}px`,
-//     });
-// }
-
-//interface Options {
-//   ancestorScroll?: boolean;
-//   ancestorResize?: boolean;
-//   elementResize?: boolean;
-//   animationFrame?: boolean;
+// the scroll event won't be intercepted.
+// As such, Event.preventDefault() will not be called,
+// guving us an optimization opportunity.
+//
+// for (const event of ['DOMContentLoaded', 'scroll', 'resize']) {
+//     window.addEventListener(event, (e) => {
+//         // let root = e.target.getRootNode();
+//         process_scrollspy(document);
+//         process_fixedpos(document);
+//     }, { passive: true });
 // }
 
 
+function selection_behavior(e) {
+    let root = e.target.getRootNode();
+    let style = getComputedStyle(e.target);
 
-define(function() {
-    function fixedpos_case1_renderer() {
-        return `
-        <div id="container2">
-        <div id="container">
-            <button id="button" aria-describedby="tooltip">
-                My button
-            </button>
-            <button id="button2">
-                My button2
-            </button>
-            <div id="tooltip" role="tooltip">My tooltip</div>
-        </div>
-        </div>
-        `;
+    function isChildOfParent(target, parent) {
+        while(target && (target = target.parentNode)) {
+            if(target === parent) return true;
+        }
+        return false;
     }
-    fixedpos_case1_renderer.name = 'fixedpos1';
-    define_case(fixedpos_case1_renderer);
 
-    function fixedpos_behavior(e) {
-        // for (const el of e.querySelectorAll('[data-fixedpos]')) {
-        //     let style = getComputedStyle(el);
-        //     let q = style.getPropertyValue('--fixedpos-target');
-        //     let target = el.querySelector(q);
-        //     let options = {
-        //         axis: style.getPropertyValue('--fixedpos-axis'),
-        //         main: style.getPropertyValue('--fixedpos-main'),
-        //         cross: style.getPropertyValue('--fixedpos-cross'),
-        //         closeup: style.getPropertyValue('--fixedpos-closeup'),
-        //         offset: style.getPropertyValue('--fixedpos-offset'),
-        //     }
-        //     let {x, y} = computePosition(target, el, options);
-        //     Object.assign(el.style, {
-        //         left: `${x}px`,
-        //         top: `${y}px`,
-        //     });
-        // }
-        process_fixedpos();
+    function get_all_options(target) {
+        if (target.hasAttribute('data-menu')) {
+            let menu = target.dataset.menu;
+            let options = menu ? [...target.querySelectorAll(menu)] : [...target.children];
+            options.filter(opt => {
+                return opt.closest('[data-menu]') === target;
+            });
+            return options;
+        }
     }
-    fixedpos_behavior.name = 'fixedpos';
-    // fixedpos_behavior.listen_on = ['scroll', 'resize', 'mousemove', 'click'];
-    fixedpos_behavior.listen_on = ['scroll', 'resize'];
-    define_layer(`
-        @layer tooltip {
-            [role="tooltip"] {
-                position: fixed;
-                pointer-events: none;
-                --fixedpos: "describedby";
-            }
-        }`);
 
-
-    define_behavior(fixedpos_behavior);
-    // (window.behaviors ||= []).push(fixedpos_behavior);
-
-    function selection_behavior(e) {
-        let root = e.target.getRootNode();
-        let style = getComputedStyle(e.target);
-
-        function isChildOfParent(target, parent) {
-            while(target && (target = target.parentNode)) {
-                if(target === parent) return true;
-            }
-            return false;
+    function do_unset(target, unset) {
+        unset(target);
+        let style = getComputedStyle(target);
+        if (style.getPropertyValue('--unset-children') === 'true') {
+            const options = get_all_options(target) || [];
+            options.map(do_unset);
         }
-        // node.closest
+    }
 
-        function toggle_target(target, detect, set, unset) {
-            // TODO: close_children
-            let style = getComputedStyle(target);
-            let selection;
-            if (selection = style.getPropertyValue('--selection')) {
-                if (detect(target)) {
-                    if (style.getPropertyValue('--multiselect') !== 'true') {
-                        let others = target.parentNode.querySelectorAll(selection);
-                        for (const other of others) {
-                            if (other != e.target) unset(other);
-                        }
-                    }
-                    set(target);
-                    return true;
-                } else if (style.getPropertyValue('--allow-deselect', 'true')) {
-                    unset(target);
-                    if (style.getPropertyValue('--unset-children') == 'true') {
-                        // target.querySelectorAll('[aria-hidden="false"]')
-                        // TODO:
-                    }
-                }
-                return false;
-            }
+    const detect = d => d.getAttribute('aria-selected') !== 'true';
+    function set(d) {
+        d.setAttribute('tabindex', '0');
+        d.setAttribute('aria-selected', 'true');
+        toggle_control(d);
+    }
+    function unset(d) {
+        d.setAttribute('tabindex', '-1');
+        d.removeAttribute('aria-selected');
+        toggle_control(d)
+    }
+    function toggle_target(target) {
+        let style = getComputedStyle(target);
+        let selection;
+        if (target.getAttribute('aria-disabled') === true ||
+            target.hasAttribute('disabled')) {
+            return;
         }
-
-        let selected = toggle_target(e.target,
-                            d => d.getAttribute('aria-selected') !== 'true',
-                            d => d.setAttribute('aria-selected', 'true'),
-                            d => d.removeAttribute('aria-selected'));
-
-        if (selected !== false) {
-            let toggle = style.getPropertyValue('--toggle');
-            let control;
-            if (toggle === 'href') {
-                control = root.querySelector(e.target.href);
-            } else if (toggle) {
-                control = e.querySelector(toggle);
-            } else if (e.target.hasAttribute('aria-controls')) {
-                control = root.getElementById(e.target.getAttribute('aria-controls'));
+        if (detect(target)) {
+            const multiselect = target.getAttribute('aria-multiselectable') === 'true';
+            if (!multiselect) {
+                const parent = target.closest('[data-menu]');
+                const options = (parent ? get_all_options(parent) : null) || [];
+                options.map(opt => do_unset(opt, unset));
             }
-            if (control) {
-                toggle_target(control,
-                          d => d.getAttribute('aria-hidden') !== 'true',
-                          d => d.setAttribute('aria-hidden', 'true'),
-                          d => d.setAttribute('aria-hidden', 'false'));
+            set(target);
+        } else if (!style.getPropertyValue('--allow-deselect', 'false')) {
+            do_unset(target, unset);
+        }
+    }
+
+    function toggle_control(target, selected) {
+        let style = getComputedStyle(target);
+        let toggle = style.getPropertyValue('--toggle-controls');
+        let control;
+        if (toggle === 'href') {
+            control = root.querySelector(target.href);
+        } else if (toggle) {
+            control = e.querySelector(toggle);
+        } else if (target.hasAttribute('aria-controls')) {
+            control = root.getElementById(target.getAttribute('aria-controls'));
+        }
+        if (control) {
+            if (selected === undefined) {
+                selected = target.getAttribute('aria-selected');
+            }
+            if (selected === 'true') {
+                control.setAttribute('aria-hidden', 'false');
+                control.removeAttribute('hidden');
+            } else {
+                control.setAttribute('aria-hidden', 'true');
+                control.setAttribute('hidden', '');
             }
         }
+    }
 
-        // TODO: select-all, unselect-all
+    // 不是在輸入法中
+    if (e.isComposing) return;
 
+    if (style.getPropertyValue('--selection')) {
+
+        const parent = e.target.closest('[data-menu]');
+        let options = (parent ? get_all_options(parent) : null) || [];
+        options = options.filter(opt => opt.hasAttribute('tabindex'));
+        let index = options.indexOf(e.target);
+        if (index !== -1) {
+            if (e.code === 'ArrowLeft')         index -= 1;
+            else if (e.code === 'ArrowRight')   index += 1;
+            else                                index = -99;
+            if (index >= 0 && index < options.length) {
+                toggle_target(options[index]);
+                options[index].focus();
+            }
+        }
+        if (e.code === 'Space' || e.code === 'Enter' || e.button === 0) {
+            toggle_target(e.target);
+        }
+    }
+
+    if (e.code === 'Space' || e.code === 'Enter' || e.button === 0) {
 
         // 按下按鈕而關閉
         if (e.target.ariaLabel == 'Close') {
-            function find_parent_until(target) {
-                while (target = target.parentNode) {
-                    let style = getComputedStyle(target);
-                    if (style.getPropertyValue('--collapse-by-close-label')) {
-                        return target;
-                    }
-                }
-            }
-            let parent = find_parent_until(e.target);
-            toggle_target(parent);
+            toggle_control(e.target);
+            // function find_parent_until(target) {
+            //     while (target = target.parentNode) {
+            //         let style = getComputedStyle(target);
+            //         if (style.getPropertyValue('--collapse-by-close-label')) {
+            //             return target;
+            //         }
+            //     }
+            // }
+            // let control = e.target.getAttribute('aria-controls');
+            // control ||= find_parent_until(e.target)
+            // if (control) {
+            // toggle_target(parent);
+            // }
         }
 
         // 按到元素之外而關閉
         // [aria-expanded="true"]
         for (const expand of root.querySelectorAll('[aria-hidden="false"]')) {
-            if (!isChildOfParent(e.target, expend)) {
-                let style = getComputedStyle(expend);
+            if (!isChildOfParent(e.target, expand)) {
+                let style = getComputedStyle(expand);
                 if (style.getPropertyValue('--collapse-on-click-outside')) {
-                    toggle_target(expend);
+                    toggle_target(expand);
                 }
             }
         }
-
-        // ESC鍵，而且不是在輸入法中
-        if(e.keyCode === 27 && !e.isComposing) {
-            const expends = [];
-            for (const expend of root.activeElement.querySelectorAll('[aria-hidden="false"]')) {
-                let style = getComputedStyle(expend);
-                if (style.getPropertyValue('--collapse-on-esc')) {
-                    expends.push(expend);
-                }
-            }
-            // 對聚焦元件下，所有展開並且設定有--collapse-on-esc的元素中
-            // 選取最後一個最內層的元素，把它關閉。
-            for (const expend of expends.reverse()) {
-                if (expends.all(exp => !isChildOfParent(exp, expend))) {
-                    toggle_target(expend);
-                    break;
-                }
+    } else if (e.keyCode === 27) {
+        // ESC鍵
+        const expands = [];
+        for (const expand of root.activeElement.querySelectorAll('[aria-hidden="false"]')) {
+            let style = getComputedStyle(expand);
+            if (style.getPropertyValue('--collapse-on-esc')) {
+                expands.push(expand);
             }
         }
-
+        // 對聚焦元件下，所有展開並且設定有--collapse-on-esc的元素中
+        // 選取最後一個最內層的元素，把它關閉。
+        for (const expand of expands.reverse()) {
+            if (expands.all(exp => !isChildOfParent(exp, expand))) {
+                toggle_target(expand);
+                break;
+            }
+        }
     }
-
-    selection_behavior.name = 'selection';
-    selection_behavior.capture = true;
-    selection_behavior.listen_on = ['click'];
-    (window.behaviors ||= []).push(selection_behavior);
-
-    // TODO: 偵測向上捲動，向下捲動
-
-})
+}
 
 
-</script>
-</body>
-</html>
+class Router {
+    static defaultMount = [document.documentElement, 'headOf', 'Router'];
+
+    '+onclick window'(e) {
+        const safeExternalLink = /(noopener|noreferrer) (noopener|noreferrer)/
+        const protocolLink = /^[\w-_]+:/
+
+        if ((e.button && e.button !== 0) ||
+            e.ctrlKey || e.metaKey || e.altKey || e.shiftKey ||
+            e.defaultPrevented) return;
+
+        let anchor = (function traverse (node) {
+            if (!node || node === node.getRootNode()) return;
+            if (node.localName !== 'a' || node.href === undefined) {
+                return traverse(node.parentNode);
+            }
+            return node;
+        })(e.target);
+
+        if (!anchor) return;
+
+        if (window.location.protocol !== anchor.protocol ||
+            window.location.hostname !== anchor.hostname ||
+            window.location.port !== anchor.port ||
+            anchor.hasAttribute('data-nanohref-ignore') ||
+            anchor.hasAttribute('download') ||
+            (anchor.getAttribute('target') === '_blank' &&
+            safeExternalLink.test(anchor.getAttribute('rel'))) ||
+            protocolLink.test(anchor.getAttribute('href'))) return;
+
+        if (anchor.href === window.location.href) {
+            // TODO: move this under next condition
+            // let hash = anchor.hash
+            // e.preventDefault();
+            // if (!self._hashEnabled && hash) {
+            //     let el = document.querySelector(hash)
+            //     if (el) el.scrollIntoView();
+            // }
+        } else if (this.dispatch(anchor)) {
+            e.preventDefault();
+            History.pushState(null, null, anchor.href);
+        }
+    }
+    'onpopstate window'(e) {
+        // e.state
+        this.load(new URL(window.location.href));
+    }
+    'onDOMContentLoaded window'(e) {
+        if (e.target !== document) return;
+        if (this.dispatch(new URL(window.location.href))) {
+            this.load(new URL(window.location.href));
+        }
+    }
+    dispatch(url) {
+        return false;
+    }
+    load(url) {}
+    render() {}
+}
+
+
+

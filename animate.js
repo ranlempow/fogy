@@ -215,11 +215,7 @@ function set(key) {
 
 
 
-
-
-
-
-
+/*
 function setStages(element, timeline) {
     let wait = 0;
     let stages = [];
@@ -279,5 +275,5 @@ window.addEventListener('animationend', (e) => {
         e.target.removeAttribute('data-flip-state');
     }
 });
-
+*/
 
