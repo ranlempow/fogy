@@ -98,8 +98,8 @@ function h(e, ...args) {
     } else if (e === 'template') {
         return h('fragment', ...args.map(n => {
             return typeof n === 'string' ? _template(n) :
-                   node instanceof NodeList ? h('fragment', node) :
-                   node.renderer ? _template(_renderer_to_slothtml(node)) : n;
+                   n instanceof NodeList ? h('fragment', n) :
+                   n.renderer ? _template(_renderer_to_slothtml(n)) : n;
         }));
     } else if ('string' === typeof e) {
         if (e.startsWith('<')) {
@@ -328,10 +328,12 @@ function renderer_proto(renderer) {
             }
 
             _checkupdate(datanew, dataold, to, from) {
-                if (!this.isPure) return true;
+                // console.log(datanew, dataold, to, from);
+                // if (!this.isPure) return true;
+                if (!from) return false;
                 if (this.checkUpate) return this.checkUpate(datanew, dataold);
                 if (this.hash) return this.hash(datanew) === this.hash(dataold);
-                return equals(datanew, dataold);
+                return !equals(datanew, dataold);
             }
 
             render(frame, props, ...args) {
@@ -543,60 +545,62 @@ function QueryablePromise(promise) {
     // Don't create a wrapper for promises that can already be queried.
     if (promise.isResolved) return promise;
 
-    let isResolved = false;
-    let isRejected = false;
+    const obj = {isResolved: false, isRejected: false};
+    // let isResolved = false;
+    // let isRejected = false;
 
     // Observe the promise, saving the fulfillment in a closure scope.
     let p = promise.then(
-       function(v) { isResolved = true; p.result = v; return v; },
-       function(e) { isRejected = true; p.exception = e; throw e; });
-    p.isFulfilled = function() { return isResolved || isRejected; };
-    p.isResolved = function() { return isResolved; }
-    p.isRejected = function() { return isRejected; }
+       function(v) { obj.isResolved = true; p.result = v; return v; },
+       function(e) { obj.isRejected = true; p.exception = e; throw e; });
+    p.isFulfilled = function() { return obj.isResolved || obj.isRejected; };
+    p.isResolved = function() { return obj.isResolved; }
+    p.isRejected = function() { return obj.isRejected; }
     return p;
 }
 
 
 function handle_async(to, promise) {
-
+    const seq = Frame.currentSeq;
     let w = to.core.asyncRendering;
     if (promise) {
         console.assert(!w);
-        w = to.core.asyncRendering = QueryablePromise(promise).then(() => {
-            if (w !== null) to.update();
+        w = to.core.asyncRendering = QueryablePromise(promise);
+
+        w.then((res) => {
+            if (w !== null) seq.update(to);
         });
     }
-    if (w.isFulfilled()) {
+    if (w?.isFulfilled && w.isFulfilled()) {
         let asynciter = to.core.asyncIterator;
         if (asynciter) {
             if (w.result.done) {
                 delete to.core.asyncIterator;
             } else {
-                to.core.asyncRendering = QueryablePromise(asynciter.next()).then(() => {
-                    to.update();
-                });
-                return [w.result.value, null];
+                const value = w.result.value;
+                delete to.core.asyncRendering;
+                handle_async(to, asynciter.next());
+                // TODO: 要不要跟下面 `if (w.exception) {` 合併?
+                return [value, null];
             }
         }
         delete to.core.asyncRendering;
         if (w.exception) {
-            return [null, w.exception];
+            return [undefined, w.exception];
         } else {
             return [asynciter ? w.result.value : w.result, null];
         }
     }
-    return null;
+    return [undefined, undefined];
 }
 
 
-function get_render_async(frame, from, to, data, force_rerender) {
-    // TODO: force_rerender?
-    // force_rerender = force_rerender === undefined ?
-    //                  (to.hash ? to.hash(data, from, to) : null) : force_rerender;
-    force_rerender = force_rerender === undefined ?
-                    to._checkupdate(data, (from || to).core?.dataResolved) : force_rerender;
-
-    if (to.asyncRendering) {
+function get_render_async(frame, from, to, data, dataResolved, force_rerender) {
+    if (to.core.asyncRendering) {
+        force_rerender = force_rerender === undefined ?
+                        to._checkupdate(dataResolved, (from || to).core?.dataResolved,
+                                        to, from) : force_rerender;
+        // console.log('y', force_rerender);
         if (force_rerender === true) {
             // data與上次不一樣時，asyncgen.return()並且重新執行render
             if (to.core.asyncIterator) {
@@ -604,12 +608,13 @@ function get_render_async(frame, from, to, data, force_rerender) {
                 delete to.core.asyncIterator;
             }
             delete to.core.asyncRendering;
-            return get_render_async(frame, from, to, data, force_rerender);
+            return get_render_async(frame, from, to, data, dataResolved, force_rerender);
         } else {
             return handle_async(to);
         }
-    } else if (force_rerender === false) {
-        return null;
+    // TODO:
+    // } else if (force_rerender === false) {
+    //     return [undefined, undefined];
     } else {
         let result, exp;
         try {
@@ -619,6 +624,8 @@ function get_render_async(frame, from, to, data, force_rerender) {
         }
         if (result && result[Symbol.asyncIterator]) {
             to.core.asyncIterator = result;
+            // console.log(to.core.asyncIterator);
+            // to.core.asyncIterator.next().then((res) => console.log(res));
             return handle_async(to, to.core.asyncIterator.next());
         } else if (result && typeof result.then === 'function') {
             return handle_async(to, result);
@@ -641,7 +648,8 @@ function parent_props(target, prop) {
 
 function setOnTree(t, prop, value) {
     if (t[prop] !== value) {
-        update.auto && (t[LINKS][prop] || []).forEach(slot => slot && slot.update());
+        // TODO: seq.update?
+        update.auto && (t[LINKS][prop] || []).forEach(slot => slot && update(slot));
         t[prop] = value;
     }
 }
@@ -679,9 +687,10 @@ function resolve_data(data, getter) {
 class Seq {
     // 並且建立sequence串，甚至根據這個串來reslove_data
 
-    constructor(rootFrame, allowUpdate) {
+    constructor(toplevel, allowUpdate) {
         this.slotStack = new Map();
-        this.rootFrame = rootFrame || Frame.rootFrame;
+        // this.root_frame = rootFrame || Frame.rootFrame;
+        this.toplevel = toplevel;
 
         this.time = Date.now();
         this.framecount = 0;
@@ -704,7 +713,7 @@ class Seq {
         if (!this.animationFunc && this.renderQueue.size > 0) {
             const func = this.animationFunc = () => {
                 if (this.animationFunc !== func) return;
-                this.redraw(mount.defaultToplevel);
+                this.redraw(this.toplevel);
                 this.animationFunc = null;
                 this.update();
             }
@@ -734,17 +743,22 @@ class Seq {
 
     render_stages(frame, from, to, dataResolved) {
         this.renderQueue && this.renderQueue.delete(to);
-
         if (from !== to) {
-            Object.assign(to, from);
+            // TODO: need this?
+            // Object.assign(to, from);
+            if (from) {
+                to._core = from._core;
+            }
             to.core.slot = to;
+        }
+
+        if (!to.core.dirty) {
+            from = null;
+            to.core.dirty = true;
         }
 
         // TODO: need this?
         to.core.frame = frame;
-
-        // TODO: need this?
-        to.core.dataResolved = dataResolved;
 
         to._proc = {
             frame: frame,
@@ -756,20 +770,25 @@ class Seq {
         }
         this.slotStack.set(to, to._proc);
 
-        let [hvalue, exc] = get_render_async(frame, from, to, to._proc.dataPass);
+        let [hvalue, exc] = get_render_async(frame, from, to,
+                                             to._proc.dataPass, dataResolved);
         if (exc) {
             to.onerror && to.onerror(exc);
             to.dispatchEvent(new CustomEvent('RenderError', { detail: { error: exc } }));
             // TODO:
             throw exc;
         } else if (!to._proc?._already_attach_hvalue) {
-            frame.render_stage_attach_hvalue(from, to, hvalue);
+            render_stage_attach_hvalue(from, to, hvalue);
         }
-        frame.render_stage_render_children(to);
+        render_stage_render_children(to);
 
         // leave frame
         delete to._proc;
         this.slotStack.delete(to);
+
+        // for _checkupdate()
+        to.core.dataResolved = dataResolved;
+
         // if (to !== from) {
         //     to.afteradd && to.afteradd(from, to);
         // }
@@ -790,15 +809,18 @@ class Seq {
             }
             stack.push(p);
         }
+        const rootSlot = stack[0] || slot;
+        const root_frame = rootSlot.core.frame ||= new Frame();
+
         for (const s of stack.reverse()) {
             this.slotStack.set(s, p_proc = {
-                frame: resolve_frame(s, p_proc?.frame || this.rootFrame),
+                frame: resolve_frame(s, p_proc?.frame || root_frame),
                 dataResolved: resolve_data(p_proc?.dataResolved, s.getter),
             });
         }
-        (p_proc?.frame || this.rootFrame).walk(this, slot, p_proc?.dataResolved,
+        (p_proc?.frame || root_frame).walk(this, slot, p_proc?.dataResolved,
                                                this.renderQueue, slot, null, null);
-        // let frame = resolve_frame(slot, p_proc?.frame || this.rootFrame);
+        // let frame = resolve_frame(slot, p_proc?.frame || this.root_frame);
         // let dataResolved = resolve_data(slot, p_proc?.dataResolved);
         // this.render_stages(frame, slot, slot, dataResolved);
         stack.forEach(x => this.slotStack.delete(x));
@@ -860,9 +882,9 @@ function moveSlot(slot, position, target, new_content) {
 
 
 function resolve_frame(slot, frame) {
-    if (slot === mount.defaultToplevel) {
-        return frame;
-    }
+    // if (slot === mount.defaultToplevel) {
+    //     return frame;
+    // }
     return !slot.core.frame ? frame :
            frame.isPrototypeOf(slot.core.frame) ? slot.core.frame :
            (slot.core.frame = Object.create(frame, slot.core.frame));
@@ -879,16 +901,20 @@ class Frame {
 
     static get currentSeq() {
         let stack = this.redrawSeqStack;
-        // return stack.length ? stack[stack.length-1] : this.rootFrame;
+        // return stack.length ? stack[stack.length-1] : Frame.rootFrame;
         return stack.length ? stack[stack.length-1] : null;
     }
 
     static get currentFrame() {
-        return this.currentSeq ?
-                this.currentSeq.currentSlot ? this.currentSeq.currentSlot.core.frame :
-                this.currentSeq.rootFrame :
-            this.rootFrame;
+        return this.currentSeq?.currentSlot?.core?.frame;
     }
+
+    // static get currentFrame() {
+    //     return this.currentSeq ?
+    //             this.currentSeq.currentSlot ? this.currentSeq.currentSlot.core.frame :
+    //             this.currentSeq.root_frame :
+    //         Frame.rootFrame;
+    // }
 
     fromcache(element, attr) {
         let key = element && element.getAttribute(attr);
@@ -946,9 +972,9 @@ class Frame {
         } else if (!slot._proc?.oldSlots &&
             (queue && queue.has(slot)) ||
             // (slot.isPure &&
-            (slot._checkupdate &&
+            (slot._checkupdate && slot.isPure &&
              slot._checkupdate(dataResolved = resolve_data(data, slot.getter),
-                               (from || slot).core?.dataResolved)) ||
+                               (from || slot).core?.dataResolved, slot, from)) ||
              // Frame.checkHash(slot, dataResolved = resolve_data(data, slot.getter))) ||
             !queue
            ) {
@@ -968,55 +994,56 @@ class Frame {
         }
     }
 
-    render_stage_attach_hvalue(from, to, hvalue) {
-        if (to._proc?._already_render_children) return;
-        to._proc && (to._proc._already_attach_hvalue = true);
-        if (hvalue !== undefined) {
-            let frag = resolve_slot(to, h('template', hvalue));
-            // let frag = resolve_slot(to, hvalue);
-            moveSlot(to, null, null, frag);
-        } else if (from !== to) {
-            let frag = h('fragment', ...selectAll(from));
-            moveSlot(to, null, null, frag);
-        } else {
-            resolve_slot(to, to.parentElement);
-            return;
-        }
-    }
-
-    render_stage_render_children(to) {
-        if(to._proc._already_render_children) return;
-        to._proc._already_render_children = true;
-
-        // 20230528 新增
-        let seq = Frame.currentSeq;
-        let slots;
-        if ((slots = Object.entries(to.slots)).length > 0) {
-            for (const [key, s] of slots) {
-                let from = to._proc.oldSlots[key] || s;
-                to._proc.frame.walk(seq, s, to._proc.dataResolved,
-                                    seq.renderQueue, from, to, key);
-            }
-        }
-
-        let new_slot_array = new Set(Object.values(to.slots));
-        for (const oldslot of Object.values(to._proc.oldSlots)) {
-            if (!new_slot_array.has(oldslot)) {
-                oldslot.ensureCallAfterUnmount();
-            }
-        }
-        if (to.core.asyncIterator) {
-            // TODO: to.core.asyncIterator.return() after unmount
-            to.core.asyncIterator.return();
-        }
-        // TODO: after asyncComplete
-    }
+    
 
 
 }
 
-Frame.rootFrame = new Frame();
-Frame.mainSeq = new Seq(Frame.rootFrame, true);
+
+function render_stage_attach_hvalue(from, to, hvalue) {
+    if (to._proc?._already_render_children) return;
+    to._proc && (to._proc._already_attach_hvalue = true);
+    if (hvalue !== undefined) {
+        let frag = resolve_slot(to, h('template', hvalue));
+        // let frag = resolve_slot(to, hvalue);
+        moveSlot(to, null, null, frag);
+    } else if (from !== to) {
+        let frag = h('fragment', ...(from ? selectAll(from) : []));
+        moveSlot(to, null, null, frag);
+    } else {
+        resolve_slot(to, to.parentElement);
+        return;
+    }
+}
+
+function render_stage_render_children(to) {
+    if(to._proc._already_render_children) return;
+    to._proc._already_render_children = true;
+
+    // 20230528 新增
+    let seq = Frame.currentSeq;
+    let slots;
+    if ((slots = Object.entries(to.slots)).length > 0) {
+        for (const [key, s] of slots) {
+            let from = to._proc.oldSlots[key] || s;
+            to._proc.frame.walk(seq, s, to._proc.dataResolved,
+                                seq.renderQueue, from, to, key);
+        }
+    }
+
+    let new_slot_array = new Set(Object.values(to.slots));
+    for (const oldslot of Object.values(to._proc.oldSlots)) {
+        if (!new_slot_array.has(oldslot)) {
+            oldslot.ensureCallAfterUnmount();
+        }
+    }
+    // if (to.core.asyncIterator) {
+    //     // TODO: to.core.asyncIterator.return() after unmount
+    //     to.core.asyncIterator.return();
+    // }
+    // TODO: after asyncComplete
+}
+
 
 const isRenderer = (renderer) => typeof renderer === 'function' || renderer?.renderer;
 
@@ -1025,7 +1052,7 @@ function resolve_target(target, position = null) {
     if (Array.isArray(target)) {
         [position, target] = target;
     } else if (target && (p = Object.keys(target)[0]) &&
-                         (t = target[p]) instanceof Node) {
+                         ((t = target[p]) instanceof Node || typeof t === 'string')) {
         target = t;
         position = p;
     } else {
@@ -1080,8 +1107,9 @@ function mount(renderer, target, {automount = true} = {}) {
             // TODO: renderer.renderer???
             if (slot.renderer === renderer.renderer) {
                 // change getter
-                slot.getter = renderer.getter;
-                if (automount && update.auto) update(slot);
+                slot._getter = renderer.getter;
+                // if (automount && update.auto) update(slot);
+                update(slot);
                 return slot;
             } else {
                 // remount
@@ -1090,7 +1118,7 @@ function mount(renderer, target, {automount = true} = {}) {
             }
         } else {
             // mount hValue
-            Frame.currentFrame.render_stage_attach_hvalue(slot, slot, renderer);
+            render_stage_attach_hvalue(slot, slot, renderer);
             // TODO: resolve slots order
             return slot;
         }
@@ -1105,8 +1133,11 @@ function mount(renderer, target, {automount = true} = {}) {
     }
     let to = nearestSlot(target);
     if (!to) {
-        to = mount.defaultToplevel;
-        to.slots ||= {};
+        to = Frame.currentSeq?.toplevel || mount.defaultToplevel;
+        if (!to.slots) {
+            to.core = { frame: new Frame() };
+            to.slots = {};
+        }
     }
     let slot;
     if (isRenderer(renderer)) {
@@ -1124,6 +1155,9 @@ function mount(renderer, target, {automount = true} = {}) {
 }
 
 mount.defaultToplevel = document.firstChild;
+// Frame.rootFrame = new Frame();
+// Frame.mainSeq = new Seq(Frame.rootFrame, true);
+Frame.mainSeq = new Seq(mount.defaultToplevel, true);
 
 // umount(slot)
 // umount(renderer)
@@ -1159,9 +1193,9 @@ function render(renderer, target) {
         slot = target;
         if (Frame.currentSeq?.currentSlot === slot) {
             if (renderer !== undefined) {
-                Frame.currentFrame.render_stage_attach_hvalue(slot, slot, renderer);
+                render_stage_attach_hvalue(slot, slot, renderer);
             }
-            Frame.currentFrame.render_stage_render_children(slot);
+            render_stage_render_children(slot);
             return;
         } else if (renderer !== undefined) {
             // renderer is any hValue?
@@ -1173,7 +1207,7 @@ function render(renderer, target) {
     } else if (renderer) {
         // TODO: 這功能還沒做完，mount不會接受fragment作為target
         slot = mount(renderer, 'fragment', {automount: false});
-        (new Seq()).render2(slot);
+        (new Seq(slot, true)).render2(slot);
         return slot.parentNode;
     } else {
         throw new Error('render nothing');
@@ -1181,7 +1215,7 @@ function render(renderer, target) {
     if (Frame.currentSeq) {
         Frame.currentSeq.render1(slot);
     } else {
-        (new Seq()).render2(slot);
+        (new Seq(slot, true)).render2(slot);
     }
     if (removeSlot) {
         slot.parentElement.removeChild(slot.endslot);
@@ -1191,7 +1225,11 @@ function render(renderer, target) {
 }
 
 
-const update = slot => Frame.mainSeq.update(slot);
+const update = slot => {
+    // TODO: 非同步update可能會用到不正確的seq
+    (Frame.currentSeq || Frame.mainSeq).update(slot);
+}
+
 update.auto = true;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
