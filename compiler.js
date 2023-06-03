@@ -684,7 +684,7 @@ const profiles = {
 }
 
 
-*function filter_key_by_regex(object, re) {
+function* filter_key_by_regex(object, re) {
     for (let k of Object.keys(object)) {
         let m = re.match(k);
         if (m[0].length > 0) {
