@@ -738,3 +738,94 @@ async function build_to_nodes(profile) {
 //             data: {...vp.data, ...thecase.data, ...(variant.profile||{}).data} };
 //     return result;
 // }
+
+
+
+async function* jsRunner(script) {
+    const state = {};
+    state.done = false;
+    state.id = '' + Date.now();
+    state.p = new Promise((resolve, reject) => {
+        state.resolve = resolve;
+        state.reject = reject;
+    });
+    const f = (event) => {
+        // if (event.origin !== "http://example.org:8080") return;
+        const payload = event.data;
+        if (payload.id !== state.id) return;
+        if (payload.error) {
+            state.reject(payload.error);
+            state.done = true;
+        } else {
+            state.resolve(payload.data);
+            if (payload.continues) {
+                state.p = new Promise((resolve, reject) => {
+                    state.resolve = resolve;
+                    state.reject = reject;
+                });
+            } else {
+                state.done = true;
+            }
+        }
+    }
+
+    window.addEventListener("message", f, false);
+
+    let a = document.createElement('iframe');
+    a.setAttribute('sandbox', 'allow-scripts');
+    a.setAttribute('srcdoc', `<script>${script}</script>`);
+    a.setAttribute('style', 'display: none;');
+    document.body.append(a);
+    try {
+        while(!state.done) {
+            yield await state.p;
+        }
+    } finally {
+        document.body.removeChild(a);
+        window.removeEventListener("message", f, false);
+    }
+}
+
+
+
+
+
+
+// Page
+//   id
+//   metadata
+//   hash
+//   text
+//   renderers : ({page, pages, datas, variables, ...}) => node
+
+
+class CompileUnit {
+    // 第一階段建造的部分
+    // 1. text-hash 做jsRunner heads(variables + repositories)
+    //   a. binary-hash resources
+    //   b. json-hash datas
+    // 2. text-hash pages
+    // 3. text-hash template.js
+    // (X)4. json-hash build.json
+
+    // 第二階段
+    // 根據build.json設定
+    // 把heads, datas, pages帶入template.js做jsRunner
+
+
+    constructor() {
+        this.path = dirname;
+        this.repositories = {};
+        this.variables = {};
+        this.data_sources = {};
+        this.pages = {};
+        this.build = {};
+    }
+
+    render({...props}) {
+
+    }
+}
+
+
+
