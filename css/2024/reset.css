@@ -1,0 +1,218 @@
+
+@layer reset {
+
+body, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6,
+pre, code, form, fieldset, legend, input, textarea,
+p, blockquote, th, td, hr, button, article, aside, details,
+figcaption, figure, footer, header, menu, nav, section {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+  /* 決定空白或換行要不要縮緊，還有空白是不是一個換行時機點(不會被pre繼承) */
+  white-space: normal;
+  /* 打斷太長的單字，但不會故意打斷來滿足min-content的啟發式長度 */
+  overflow-wrap: break-word;
+  /* 有了white-space與overflow-wrap的調整，這個參數已經不再需要 */
+  word-break: normal;
+  /* 現在瀏覽器效能足夠好了 */
+  text-rendering: optimizeLegibility;
+}
+
+
+body, p {
+  text-indent: 0px;
+}
+
+html {
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* 去掉cell的邊距，並且讓其邊框重疊 */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+summary {
+  outline: none;
+}
+
+/* 去除預設邊框 */
+fieldset, img {
+    border: 0;
+}
+
+hr { box-sizing: content-box; height: 0; }
+pre,code,kbd,samp { font-family: monospace, monospace; font-size: 1em; }
+code,kbd,samp,time {
+  background: var(--background);
+  color: var(--code);
+  padding: 2.5px 5px;
+  border-radius: 6px;
+}
+b,strong { font-weight: bolder; }
+small { font-size: 80%; }
+sub,sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+sub { bottom: -0.25em; }
+sup { top: -0.5em; }
+
+/* 段落的頭尾還是需要對齊 */
+p { text-align: justify; }
+ol, ul { padding-inline-start: 2em; }
+figure, blockquote  { margin-inline: 2em; }
+pre { white-space: pre; }
+
+
+dfn:lang(zh),dfn:lang(ja) { font-weight: bolder; font-style: inherit; }
+cite:lang(zh),cite:lang(ja) { /*font-style: inherit;*/ }
+dfn:lang(zh) { text-emphasis: open dot; }
+dfn:lang(ja) { text-emphasis: open sesame; }
+
+/* Alternative voices and variables */
+i,var {}
+u,ins { padding-bottom: 0.05em; border-bottom: 1px solid; text-decoration: none; }
+
+/*  Annotations, inaccurate text, insertion and deletion 避免橫線連在一起 */
+:where(u,ins) + :where(u,ins) { margin-left: .125em }
+:where(s,del) + :where(u,del) { margin-left: .125em }
+
+
+q { quotes: '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019'; }
+q:lang(zh) { quotes: '\300c' '\300d' '\300e' '\300f' '\300c' '\300d' '\300e' '\300f' '\300c' '\300d' '\300e' '\300f'; }
+q:lang(zh-CN),q:lang(en) { quotes: '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019'; }
+q:lang(en-GB) { quotes: '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d'; }
+q:before { content: open-quote; }
+q:after { content: close-quote; }
+q:lang(ja):before, q:lang(ja):after { content: none; }
+
+
+h1 { margin-block: 1.25em; font-size: 2.2em; }
+h2 { margin-block: 1.25em; font-size: 1.8em; }
+h3 { margin-block: 1.25em; font-size: 1.5em; }
+h4 { margin-block: 1.25em; font-size: 1.25em; }
+h5 { margin-block: 1.25em; font-size: 1.125em; }
+h6 { margin-block: 1.25em; font-size: 0.875em; }
+
+
+}
+
+
+
+@layer basic {
+
+
+/* aricale reset */
+
+article :is(ul, ol, p, figure, blockquote, table, details) {
+  margin-block: 1em;
+}
+ul, ol, p, figure, blockquote, table, details {
+  margin-block: 1em;
+}
+
+/* TODO: use variable (這一開始用在detail) */
+figure, blockquote, table, details {
+  border-radius: 6px;
+}
+
+/* other element style */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  /* 直接均分欄位寬度 */
+  table-layout: fixed;
+  caption-side: bottom;
+}
+
+td,
+th {
+  padding: 6px;
+  text-align: left;
+/*   vertical-align: top; */
+}
+
+thead {
+  border-bottom: 1px solid var(--border);
+}
+
+tfoot {
+  border-top: 1px solid var(--border);
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--background);
+}
+
+/* ? */
+tbody tr:nth-child(even) button {
+  background-color: var(--background-alt);
+}
+/* ? */
+tbody tr:nth-child(even) button:hover {
+  background-color: var(--background-body);
+}
+
+details {
+  background-color: var(--background-alt);
+  padding: 10px 10px 0;
+  overflow: hidden;
+}
+
+summary {
+  background-color: var(--background);
+  padding: 10px;
+  margin: -10px -10px 0;
+  cursor: pointer;
+}
+
+summary:hover,
+summary:focus {
+  text-decoration: underline;
+}
+
+summary::-webkit-details-marker {
+  color: var(--text-main);
+}
+
+}
+
+
+@layer reset-after-basic {
+  
+  :is(h1,h2,h3,h4,h5,h6):has(+ :is(p,ol,ul,h6,blockquote,section)),
+  :is(h1,h2,h3,h4,h5):has(+ h5),
+  :is(h1,h2,h3,h4):has(+ h4),
+  :is(h1,h2,h3):has(+ h3),
+  :is(h1,h2):has(+ h2) {
+    margin-block-end: min(0.125em, 8px);
+  }
+
+  :is(h1,h2,h3,h4,h5,h6) + :is(p,ol,ul,h6,blockquote,section),
+  :is(h1,h2,h3,h4,h5) + h5,
+  :is(h1,h2,h3,h4) + h4,
+  :is(h1,h2,h3) + h3,
+  :is(h1,h2) + h2,
+  :is(h1,h2,h3,h4,h5,h6) + :is(blockquote,section) > :is(p,ol,ul,h6):first-child,
+  :is(h1,h2,h3,h4,h5) + :is(blockquote,section) > :is(p,ol,ul,h5):first-child,
+  :is(h1,h2,h3,h4) + :is(blockquote,section) > :is(p,ol,ul,h4):first-child,
+  :is(h1,h2,h3) + :is(blockquote,section) > :is(p,ol,ul,h3):first-child,
+  :is(h1,h2) + :is(blockquote,section) > :is(p,ol,ul,h2):first-child {
+    margin-block-start: min(0.125em, 8px);
+  }
+}
+

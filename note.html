@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<script src="./fogy.js"></script>
+<script src="./lib/datagrid.js"></script>
+<link href="./site.css" rel="stylesheet" />
+
+<script>
+fogyReady(() => {
+  window.addEventListener('scroll', e => {
+    process_scrollspy(document);
+  }, true);
+});
+</script>
+
+<header>
+<h1>Fogy Notes</h1>
+<nav>
+  <ul>
+    <li><a href=".">home</a></li>
+    <li><a href=".">about</a></li>
+    <li><a href=".">projects</a></li>
+    <li><a href=".">talks</a></li>
+  </ul>
+</nav>
+</header>
+<ul class="checklist btn-icon-s">
+  <li class="close-before">No build tools required.</li>
+  <li class="checked-before">Ideal for JAM stacks.</li>
+  <li class="checked-before">Event delegation by default</li>
+  <li class="more-before">Lots of <a href="/examples.html">examples</a>.</li>
+</ul>
+
+
+<div class="toc-menu" data-scrollspy="body">
+
+<!-- MarkdownTOC -->
+
+- [About `minmax()`](#note-about-minmax)
+  - [或許用 `minmax(0px, 1fr)`](#note-overflow-in-grid)
+- [Using auto-fit or auto-fill keywords](#note-auto-fit-vs-auto-fill)
+- Usage of ch unit for a content wrapper
+- Long content And Scrollbar gutter
+- Prevent an image from being stretched or compressed
+- Image maximum width
+- Text over images
+- Avoid using fixed width or height
+- Lock scroll chaining
+- [滾動監測](#note-scrollspy)
+- [雜項排版](#note-old)
+
+<!-- /MarkdownTOC -->
+
+</div>
+<span data-scrollspy-spy></span>
+
+
+## About `minmax()` {#note-about-minmax}
+
+<style>
+
+.container {
+    resize: horizontal;
+    overflow: hidden;
+    display: grid;
+    gap: 20px;
+    margin: 5px;
+    border: 1px solid;
+    width: 600px;
+}
+
+.container>div {
+    background: red;
+    color: #ddd;
+    height: 50px;
+}
+</style>
+
+
+`minmax(min, max)` 是track system中一個重要的函數，用來限制佈局的長度範圍。
+
+- 首先尊重min-width, max-width
+- 如果沒有設置的話，則尊重文字換行
+
+> If max < min, then max is ignored and minmax(min,max) is treated as min. As a maximum, a `<flex>` value sets the flex factor of a grid track; it is invalid as a minimum.
+
+一件重要的事情是，fr單位只能使用在maximum中。
+`minmax(1fr, 200px)` 這樣是不行的。
+
+
+<div class="container" style="grid-template-columns:minmax(auto,auto) minmax(auto,auto)">
+  <div>minmax(auto, auto)</div>
+  <div>minmax(auto, auto)</div>
+</div>
+<div class="container" style="grid-template-columns:minmax(min-content,max-content) minmax(min-content,max-content);">
+  <div>minmax(min-content, max-content)</div>
+  <div>minmax(min-content, max-content)</div>
+</div>
+<div class="container" style="grid-template-columns:minmax(auto,max-content) minmax(auto,max-content)">
+  <div>minmax(auto, max-content)</div>
+  <div>minmax(auto, max-content)</div>
+</div>
+
+`minmax(auto, ...)` 比起 `minmax(min-content, ...)` auto不受文字大小限制，只受min-width限制。
+
+但是當auto與 max: auto 或是 max: max-content 配對時，auto一樣受到文字大小限制
+
+
+<div class="container" style="grid-template-columns:minmax(auto,40%) minmax(auto,40%)">
+  <div>minmax(auto, 40%)</div>
+  <div>minmax(auto, 40%)</div>
+</div>
+<div class="container" style="grid-template-columns:minmax(auto,40%) minmax(auto,40%)">
+  <div style="min-width:130px;">minmax(auto, 40%)+</div>
+  <div style="min-width:130px;">minmax(auto, 40%)+</div>
+</div>
+<div class="container" style="grid-template-columns:minmax(min-content,40%) minmax(min-content,40%)">
+  <div>minmax(min-content, 40%)</div>
+  <div>minmax(min-content, 40%)</div>
+</div>
+<div class="container" style="grid-template-columns:minmax(min-content,40%) minmax(min-content,40%)">
+  <div style="min-width:130px;">minmax(min-content, 40%)+</div>
+  <div style="min-width:130px;">minmax(min-content, 40%)+</div>
+</div>
+
+`minmax(..., auto)` 比起 `minmax(..., max-content)` 多了自動延伸寬度。
+<div class="container" style="grid-template-columns:minmax(30%,max-content) minmax(30%,max-content)">
+  <div>minmax(30%, max-content)</div>
+  <div>minmax(30%, max-content)</div>
+</div>
+<div class="container" style="grid-template-columns:minmax(30%,auto) minmax(30%,auto)">
+  <div>minmax(30%, auto)</div>
+  <div>minmax(30%, auto)</div>
+</div>
+
+`fit-content` 效果等同於 `fit-content(stretch)`，會用盡可用空間，但不超過max-content。
+
+`fit-content()` 會將長度切在最小auto，最大max-content之間，表達為 `minmax(auto, max-content)`
+
+簡單來說 fit-content 會讓元素使用可用空間，但不會大於 max-content。
+
+- 如果可用空間比max-content大，寬度就等於 max-content，
+- 如果可用空間比min-content小，那麼寬度就等於 min-content
+- 如果可用空間比max-content小，寬度就等於可用空間的寬，
+
+### 或許用 `minmax(0px, 1fr)` {#note-overflow-in-grid}
+
+套用`minmax(0px, 1fr)`，才能夠讓overflow的元素縮小到真正大小 
+
+[參考資料][https://github.com/w3c/csswg-drafts/issues/1777]
+
+
+## Using auto-fit or auto-fill keywords {#note-auto-fit-vs-auto-fill}
+
+[參考][https://ishadeed.com/article/css-grid-minmax/]
+[防禦性樣式表 defensive-css][https://ishadeed.com/article/defensive-css/]
+
+<style>
+.wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+</style>
+
+- auto-fit 會改變項目的寬度來符合空間規劃
+- auto-fill 則盡量不改變項目的寬度
+
+
+<style>
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, 250px), 1fr)
+  );
+  gap: 1rem;
+}
+</style>
+
+- If the viewport width is less than 250px, then the first value of the minmax() function will be 100% of the parent width.
+- If the viewport is larger than 250px, then the first value of the minmax() will be 250px.
+
+
+
+## Usage of ch unit for a content wrapper
+
+<style>
+.wrapper {
+  display: grid;
+  grid-template-columns: minmax(1rem, 1fr) minmax(auto, 70ch) minmax(1rem, 1fr);
+  grid-gap: 1rem;
+}
+</style>
+
+
+<style>
+.ct {
+    background: yellow;
+    display: grid;
+    grid: repeat(4, 50px) / repeat(4, 50px);
+    width: min-content;
+/*     place-items: <align-self> / <justify-self>; */
+/*     place-content: <align-self> / <justify-self>; */
+}
+.it {
+    background: green;
+    grid-area: span 1 / span 1 / 3 / 3;
+/*     place-self: <align-self> / <justify-self>; */
+}
+</style>
+<div class="ct">
+    <div class="it"></div>
+</div>
+
+`grid-area: $grid-row-start $grid-column-start $grid-row-end $grid-column-end`
+`grid-area: $grid-row-ident $grid-column-ident`
+`grid-area: $ident`
+
+grid-row-end, grid-column-end 如果沒有指定就是 `auto`，也就是`span 1`
+grid-row-start, grid-column-start 如果是 `span N` 的形式，代表從終點往回數。
+
+
+## Long content And Scrollbar gutter
+
+<style>
+.ddd {
+    width: 101px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+    border: 10px solid red;
+    box-sizing: border-box;
+}
+.ccc {
+    display: grid;
+    grid: auto / repeat(auto-fill, 150px);
+}
+</style>
+<div class="ccc">
+<div class="ddd">
+what123 what what123op what345x what what 
+what what what what what what 
+</div>
+<div class="ddd" style="border: 1px solid red;">
+what123 what what123op what345x what what 
+what what what what what what 
+</div>
+<div class="ddd" style="box-sizing: content-box;">
+what123 what what123op what345x what what 
+what what what what what what 
+</div>
+<div class="ddd" style="box-sizing: content-box; scrollbar-gutter: auto;">
+what123 what what123op what345x what what 
+what what what what what what 
+</div>
+<div class="ddd" style="overflow: hidden; text-overflow: ellipsis; height: 100px;">
+what123 what what123op what345x what what 
+what what what what what what 
+</div>
+</div>
+
+## Prevent an image from being stretched or compressed
+
+```css
+img {
+  object-fit: cover;
+}
+```
+
+對所有的影像設定這個數值，保證影像可以在比例不變的情況下被適當裁切。
+另外可以指定 `object-position` 來改變裁切的中心點。
+
+## Image maximum width
+
+這幾乎是通用的規則，應該要放在CSS reset內。
+
+```css
+img {
+  max-width: 100%;
+  object-fit: cover;
+}
+```
+
+## Text over images
+
+這樣當文字的顏色與底色接近時，也不會因為圖片無法載入而看不到文字。
+
+```css
+.card__img {
+  background-color: grey;
+}
+```
+
+## Avoid using fixed width or height
+
+設定 `min-height` 或 `min-width` 後，讓元素自己找到適當大小
+
+## Lock scroll chaining
+
+- contain 會讓捲動不會過渡到父元素捲軸。
+- none 則是連向上捲動觸發重新整理頁面都不會發生。
+
+例如: 
+
+```css
+.modal__content {
+  overscroll-behavior-y: contain;
+  overflow-y: auto;
+}
+```
+
+這樣，內部捲軸到底之後，就不會在牽動外部捲軸。
+
+
+
+## 滾動監測 {#note-scrollspy}
+
+對於滾動進入視野內的標題，會選取該標題，並且選取與該標題相關的連結。
+
+<style>
+.container2 {
+  width: 500px;
+  height: 300px;
+  overflow-y: auto;
+}
+.active {
+  color: red;
+}
+</style>
+<script>
+fogyReady(() => {
+  window.addEventListener('scroll', e => {
+    process_scrollspy(document);
+  }, true);
+});
+</script>
+<div id="menu" data-scrollspy="container">
+<a href="#aaaa">the AAAA</a>
+<a href="#bbbb">the BBBB</a>
+<a href="#cccc">the CCCC</a>
+</div>
+<div class="container2" tabindex="0">
+<div id="container" data-scrollspy="self" tabindex="0">
+    <h4 id="aaaa">AAAA</h4>
+    <p>
+    In many cases, scroll-linked effects can be reimplemented using CSS and made to run on the compositor thread. However, in some cases the current APIs offered by the browser do not allow this. In all cases, however, Firefox will display a warning to the developer console (starting in version 46) if it detects the presence of a scroll-linked effect on a page. Pages that use scrolling effects without listening for scroll events in JavaScript will not get this warning. See the Asynchronous scrolling in Firefox blog post for some more examples of effects that can be implemented using CSS to avoid jank.
+    </p>
+    <h4 id="bbbb">BBBB</h4>
+    <p>
+    In many cases, scroll-linked effects can be reimplemented using CSS and made to run on the compositor thread. However, in some cases the current APIs offered by the browser do not allow this. In all cases, however, Firefox will display a warning to the developer console (starting in version 46) if it detects the presence of a scroll-linked effect on a page. Pages that use scrolling effects without listening for scroll events in JavaScript will not get this warning. See the Asynchronous scrolling in Firefox blog post for some more examples of effects that can be implemented using CSS to avoid jank.
+    </p>
+    <h4 id="cccc">CCCC</h4>
+    <p>
+    In many cases, scroll-linked effects can be reimplemented using CSS and made to run on the compositor thread. However, in some cases the current APIs offered by the browser do not allow this. In all cases, however, Firefox will display a warning to the developer console (starting in version 46) if it detects the presence of a scroll-linked effect on a page. Pages that use scrolling effects without listening for scroll events in JavaScript will not get this warning. See the Asynchronous scrolling in Firefox blog post for some more examples of effects that can be implemented using CSS to avoid jank.
+    </p>
+    <button id="button" aria-describedby="tooltip">
+        My button
+    </button>
+    <div id="tooltip" role="tooltip" data-fixedpos>My tooltip</div>
+    <button id="button2">
+        My button2
+    </button>
+</div>
+</div>
+
+
+
+## 雜項排版 {#note-old}
+
+<details>
+<summary>舊版排版</summary>
+
+<nav>
+  <ul>
+    <li><a href="#">primary link</a></li>
+    <li>
+      <a href="#">primary link</a>
+      <ul>
+        <li><a href="#">secondary link</a></li>
+        <li><a href="#">secondary link</a></li>
+      </ul>
+    </li>
+    <li><a href="#">primary link</a></li>
+  </ul>
+</nav>
+
+<main>
+<nav class="crumbs">
+    <ol>
+        <li><a href="bikes">Bikes</a></li>
+        <li><a href="bikes/bmx">BMX</a></li>
+        <li>Jump Bike 3000</li>
+    </ol>
+</nav>
+<article>
+  <header>
+    <h1>How to Become an MDN Contributor</h1>
+    <nav>TOC</nav>
+  </header>
+  <p>
+    Do you want to help protect the web?....
+  </p>
+  <iframe allow="fullscreen" width=550 height=476 title="Twitter Tweet" src="https://platform.twitter.com/embed/index.html?dnt=false&amp;embedId=twitter-widget-0&amp;frame=false&amp;hideCard=false&amp;hideThread=false&amp;id=1321128432370176002&amp;lang=zh-tw&amp;origin=https%3A%2F%2Fgnn.gamer.com.tw%2Fdetail.php%3Fsn%3D205400&amp;theme=light&amp;widgetsVersion=ed20a2b%3A1601588405575&amp;width=550px" data-tweet-id="1321128432370176002"></iframe>
+  <p>
+    Very very long text. Very very long text. Very very long text. Very very long text.
+    Very very long text. Very very long text. Very very long text. Very very long text.
+    Very very long text. Very very long text. Very very long text. Very very long text.
+    Very very long text. Very very long text. Very very long text. Very very long text.
+    Very very long text. Very very long text. Very very long text. Very very long text.
+    Very very long text. Very very long text. Very very long text. Very very long text.
+  </p>
+  <section>
+    <h2>Steps to Editing an Article</h2>
+    <figure>
+      <img src="pic_trulli.jpg" alt="Trulli" height="42" width="42">
+      <figcaption>Fig1. - Trulli, Puglia, Italy.</figcaption>
+    </figure>
+<figure>
+<img src="https://picsum.photos/300/2000" alt="descriptive text"
+    width="300" height="2000">
+</figure>
+    <section>
+      <h3>Amazing MDN Contributors</h3>
+      <ul>
+        <li></li>
+        <li><img src="link" alt="descriptive text"></li>
+        <li><img src="link" alt="descriptive text"></li>
+      </ul>
+    </section>
+  </section>
+  <footer>
+    <p>
+      Author info, publication date
+    </p>
+  </footer>
+</article>
+
+<style>
+aside {
+  float: right;
+  width: 40%;
+}
+</style>
+<h2>Aside</h2>
+<aside>Use this to emphasize a content related to the main content.</aside>
+<p>main content</p>
+
+<figure>
+  <img src="https://via.placeholder.com/900x500" alt="placeholder image 900 pixels wide by 500 pixels tall">
+  <figcaption>A photo placeholder text</figcaption>
+</figure>
+</main>
+</details>

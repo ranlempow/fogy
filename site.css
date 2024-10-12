@@ -1,0 +1,46 @@
+
+/* note.html 本頁的主體樣式 */
+body {
+  width: 800px;
+  margin-inline: auto;
+}
+body > header:first-of-type {
+  margin-block-end: 4em;
+}
+body > header:first-of-type > h1 {
+  display: grid;
+  grid: none / auto-flow max-content;
+  place-content: center;
+  font-size: 5em;
+  margin-block-end: 0.5em;
+  color: grey;
+}
+body > header:first-of-type > nav > ul {
+  list-style: none;
+  display: grid;
+  padding: 0;
+  grid: none / auto-flow min-content;
+  gap: 5ch;
+  place-content: center;
+}
+
+ul.checklist {
+  list-style: none;
+}
+
+.toc-menu {
+  overflow:  hidden;
+  max-width: calc((100vw - 800px) / 2);
+}
+.toc-menu:has(+ [data-scrollspy-visible="below"]) {
+  position: sticky;
+  top: 60px;
+  margin-left: -300px;
+}
+
+.toc-menu ul {
+  list-style: none;
+}
+.toc-menu ul ul {
+  margin-block: 0.5em;
+}

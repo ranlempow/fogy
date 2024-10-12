@@ -1,0 +1,597 @@
+/*
+
+## Title & SubTitle
+
+
+
+## 圖文塊
+
+<section>
+<figure>
+
+v-img
+v-card-item
+  v-icon
+  Sub-component used to wrap the Card’s v-card-title and v-card-subtitle components.
+  v-card-title <hgroup> <figcaption>
+    Sub-component used to display the Card’s title. Wraps the #title slot
+    v-card-subtitle
+
+v-toolbar
+<detail>
+v-card-text <p> <article>
+  Sub-component used to display the Card’s text. Wraps the #text slot.
+v-card-actions <role="toolbar">
+  Sub-component that modifies the default styling of v-btn. Wraps the #actions slot
+
+
+Card?
+(O)Figure?
+<hgroup>
+
+
+## 文章 <article>?
+
+*/
+
+img,iframe,canvas,svg,video {
+  max-height: 690px;
+  object-fit: scale-down;
+  border: none;
+  width: attr(width, initial);
+  height: attr(height, initial);
+  &:where([width], [height], [data-aspect-ratio]) {
+    aspect-ratio: attr(data-aspect-ratio, auto);
+    object-fit: cover;
+  }
+}
+
+
+
+
+
+figure {
+  /* overflow-x: scroll; */
+  /* overflow-y: auto; */
+  overflow-x: auto;
+}
+figure > :where(img,iframe,canvas,svg,video) {
+  width: initial;
+  max-width: initial;
+  max-height: initial;
+  object-fit: none;
+}
+
+/* <code> etc. */
+figure > :not(img,iframe,canvas,svg,video,figcaption) {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+figure[role="group"] {
+    display: grid;
+    /* grid: auto-flow / repeat(auto-fill, minmax(min(10rem, 100%), 1fr)) ; */
+    /* grid: auto-flow / repeat(auto-fill, minmax(100px, 1fr)); */
+    /* grid: auto-flow / repeat(2, 1fr); */
+    grid: auto-flow / 1fr 40px;
+}
+figure[role="group"] > figcaption {
+    grid-column: 1 / -1;
+}
+
+
+
+img[loading="lazy"] {
+  display: grid;
+}
+img[loading="lazy"]::before {
+  position: absolute;
+  display: block;
+  content: attr(alt, "");
+  background: gray;
+  z-index: -1;
+}
+
+p[data-max-line] {
+  display: -webkit-box;
+  -webkit-line-clamp: attr(data-max-line, 1);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/*
+$umbra-map: (
+  0: '0px 0px 0px 0px',
+  1: '0px 2px 1px -1px',
+  2: '0px 3px 1px -2px',
+  3: '0px 3px 3px -2px',
+  4: '0px 2px 4px -1px',
+  5: '0px 3px 5px -1px',
+  6: '0px 3px 5px -1px',
+  7: '0px 4px 5px -2px',
+  8: '0px 5px 5px -3px',
+  9: '0px 5px 6px -3px',
+  10: '0px 6px 6px -3px',
+  11: '0px 6px 7px -4px',
+  12: '0px 7px 8px -4px',
+  13: '0px 7px 8px -4px',
+  14: '0px 7px 9px -4px',
+  15: '0px 8px 9px -5px',
+  16: '0px 8px 10px -5px',
+  17: '0px 8px 11px -5px',
+  18: '0px 9px 11px -5px',
+  19: '0px 9px 12px -6px',
+  20: '0px 10px 13px -6px',
+  21: '0px 10px 13px -6px',
+  22: '0px 10px 14px -6px',
+  23: '0px 11px 14px -7px',
+  24: '0px 11px 15px -7px',
+) !default;
+
+$penumbra-map: (
+  0: '0px 0px 0px 0px',
+  1: '0px 1px 1px 0px',
+  2: '0px 2px 2px 0px',
+  3: '0px 3px 4px 0px',
+  4: '0px 4px 5px 0px',
+  5: '0px 5px 8px 0px',
+  6: '0px 6px 10px 0px',
+  7: '0px 7px 10px 1px',
+  8: '0px 8px 10px 1px',
+  9: '0px 9px 12px 1px',
+  10: '0px 10px 14px 1px',
+  11: '0px 11px 15px 1px',
+  12: '0px 12px 17px 2px',
+  13: '0px 13px 19px 2px',
+  14: '0px 14px 21px 2px',
+  15: '0px 15px 22px 2px',
+  16: '0px 16px 24px 2px',
+  17: '0px 17px 26px 2px',
+  18: '0px 18px 28px 2px',
+  19: '0px 19px 29px 2px',
+  20: '0px 20px 31px 3px',
+  21: '0px 21px 33px 3px',
+  22: '0px 22px 35px 3px',
+  23: '0px 23px 36px 3px',
+  24: '0px 24px 38px 3px',
+) !default;
+
+$ambient-map: (
+  0: '0px 0px 0px 0px',
+  1: '0px 1px 3px 0px',
+  2: '0px 1px 5px 0px',
+  3: '0px 1px 8px 0px',
+  4: '0px 1px 10px 0px',
+  5: '0px 1px 14px 0px',
+  6: '0px 1px 18px 0px',
+  7: '0px 2px 16px 1px',
+  8: '0px 3px 14px 2px',
+  9: '0px 3px 16px 2px',
+  10: '0px 4px 18px 3px',
+  11: '0px 4px 20px 3px',
+  12: '0px 5px 22px 4px',
+  13: '0px 5px 24px 4px',
+  14: '0px 5px 26px 4px',
+  15: '0px 6px 28px 5px',
+  16: '0px 6px 30px 5px',
+  17: '0px 6px 32px 5px',
+  18: '0px 7px 34px 6px',
+  19: '0px 7px 36px 6px',
+  20: '0px 8px 38px 7px',
+  21: '0px 8px 40px 7px',
+  22: '0px 8px 42px 7px',
+  23: '0px 9px 44px 8px',
+  24: '0px 9px 46px 8px',
+) !default;
+
+*/
+
+
+
+.sheet {
+  border: var(--sheet-border-width, 0px) solid;
+  border-radius: var(--sheet-border-radius, 0px);
+  /* box-shadow: none; */
+}
+
+@layer elevation {
+
+  .menu:not(.flat, .outline),
+  .sheet.elevation-1,
+  .sheet.elevation-2,
+  .sheet.elevation-3,
+  .sheet.elevation-4,
+  .sheet.elevation-6,
+  .sheet.elevation-8,
+  .sheet.elevation-12 {
+    --shadow-color: black;
+    --umbra-opacity: 20%;
+    --penumbra-opacity: 14%;
+    --ambient-opacity: 12%;
+    --umbra-transparent: calc(100% - var(--umbra-opacity));
+    --penumbra-transparent: calc(100% - var(--penumbra-opacity));
+    --ambient-transparent: calc(100% - var(--ambient-opacity));
+
+    /* box-shadow:
+      var(--umbra-values)
+        color-mix(in srgb, var(--shadow-color), transparent var(--umbra-opacity)),
+      0px calc(var(--elevation-level)) calc(var(--elevation-level)) 0px
+        color-mix(in srgb, var(--shadow-color), transparent var(--penumbra-opacity)),
+      0px min(1px, calc(var(--elevation-level) / 2 - 2px)) calc(1px + var(--elevation-level) * 2) 0px
+        color-mix(in srgb, var(--shadow-color), transparent var(--ambient-opacity)); */
+    box-shadow:
+      var(--umbra-values)
+        color-mix(in srgb, var(--shadow-color), transparent var(--umbra-transparent)),
+      0px calc(var(--elevation-level)) calc(var(--elevation-level)) 0px
+        color-mix(in srgb, var(--shadow-color), transparent var(--penumbra-transparent)),
+      0px 1px calc(1px + var(--elevation-level) * 2) 0px
+        color-mix(in srgb, var(--shadow-color), transparent var(--ambient-transparent));
+  }
+
+
+  .sheet.elevation-1 {
+    --elevation-level: 1px;
+    --umbra-values: 0px 2px 1px -1px;
+  }
+
+  .sheet.elevation-2 {
+    --elevation-level: 2px;
+    --umbra-values: 0px 3px 1px -2px;
+  }
+
+  .sheet.elevation-3 {
+    --elevation-level: 3px;
+    --umbra-values: 0px 3px 3px -2px;
+  }
+
+  .menu:not(.flat, .outline),
+  .sheet.elevation-4 {
+    --elevation-level: 4px;
+    --umbra-values: 0px 2px 4px -1px;
+  }
+
+  .sheet.elevation-6 {
+    --elevation-level: 6px;
+    --umbra-values: 0px 3px 5px -1px;
+  }
+
+  .sheet.elevation-8 {
+    --elevation-level: 8px;
+    --umbra-values: 0px 5px 5px -3px;
+  }
+
+  .sheet.elevation-12 {
+    --elevation-level: 12px;
+    --umbra-values: 0px 7px 8px -4px;
+  }
+
+}
+
+
+
+
+
+.modal {
+  position: fixed;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  --animation-time-in:  var(--animation-reduced-to, 200ms);
+  --animation-time-out: var(--animation-reduced-to, 100ms);
+  & > * {
+    grid-area: 1/-1;
+  }
+  & > [data-dialog-hide] {
+    background: #717174;
+    opacity: 0;
+    transition: all var(--animation-time-out) ease;
+    z-index: -1;
+  }
+  &[aria-hidden="false"] > [data-dialog-hide] {
+    opacity: 0.5;
+    transition: all var(--animation-time-in) ease;
+  }
+
+  & > [aria-modal="true"] {
+    max-width: 90%;
+    max-height: 90%;
+
+    opacity: 0;
+    transition: all var(--animation-time-out) ease;
+    --collapse-on-esc: true;
+  }
+
+  & > [aria-modal="true"][role="alertdialog"] {
+      --collapse-on-esc: unset;
+  }
+
+  &.offcanvas > [aria-modal="true"] {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  &:not(.offcanvas) > [aria-modal="true"] {
+    place-self: center;
+  }
+
+  &.offcanvas.left > [aria-modal="true"] {
+    place-self: normal start;
+    transform: translateX(-100%);
+  }
+
+  &.offcanvas.right > [aria-modal="true"] {
+    place-self: normal end;
+    transform: translateX(100%);
+  }
+
+  &.offcanvas.top > [aria-modal="true"] {
+    place-self: start normal;
+    transform: translateY(-100%);
+  }
+
+  &.offcanvas.bottom > [aria-modal="true"] {
+    place-self: end normal;
+    transform: translateY(100%);
+  }
+
+  &[aria-hidden="false"] > [aria-modal="true"] {
+    opacity: 1;
+    transform: translate(0px);
+    transition: all var(--animation-time-in) ease;
+  }
+
+
+  overflow: auto;
+
+  &[data-scrollable="content"],
+  &[data-scrollable="section"],
+  &[data-scrollable="none"] {
+      overflow: hidden;
+  }
+  &[data-scrollable="content"] > [aria-modal="true"] {
+      max-height: calc(100vh - 100px);
+      overflow: auto;
+  }
+  &[data-scrollable="section"] section {
+      max-height: calc(100vh - 200px);
+      overflow: auto;
+  }
+}
+
+
+
+
+
+
+
+/*[aria-hidden="true"] {
+    display: none;
+}
+
+.modal[aria-hidden="true"] {
+    pointer-events: none;
+    opacity: 0;
+}
+
+.modal[aria-hidden="true"][data-alt] {
+    animation: instant-out var(--animation-time-out) none;
+}
+
+.modal[aria-hidden="false"] {
+    pointer-events: auto;
+    opacity: 1;
+}
+*/
+
+/* [aria-modal="true"] {
+    background: #fff;
+    padding: 5% 5%;
+    border-radius: 5px;
+    box-shadow: 0 0 8px rgba(48, 48, 48, 0.25);
+} */
+
+
+
+
+
+
+
+
+.card {
+  display: grid;
+
+  & > img {
+
+  }
+  &.card-content-right {
+    grid-template-columns: min-content 1fr;
+    & > :first-of-type(div) {
+      grid-column: 2 / span 1;
+    }
+    & > img {
+      grid-column: 1 / span 1;
+    }
+  }
+  &.card-content-left {
+
+  }
+  &.card-content-top {
+  }
+  &.card-content-bottom {
+  }
+
+  &.card-media-cover {
+    & > * {
+      grid-area: 1/-1;
+    }
+    & > header,
+    & > footer {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    & > footer {
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+  }
+
+
+
+
+  & > .drag-point
+  & > header > .drag-point {
+
+  }
+
+  & > .toolbar
+  & > header > .toolbar {
+
+  }
+
+  & > :is(hgroup, figcaption),
+  & > header > :is(hgroup, figcaption) {
+    & > .title-icon {
+
+    }
+
+  }
+
+  /* & > article,
+  & > :first-of-type(div) {
+  } */
+
+  & > .actions,
+  & > footer > .actions {
+
+  }
+
+
+  &::after {
+    content: "";
+    grid-area: 1/-1;
+  }
+  &.card-cover-bg-grey::after {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  &.card-cover-bg-gradient::after {
+    background: linear-gradient(to top, #000000b9, #0000) bottom/100% 60% no-repeat;
+  }
+}
+
+
+
+--card {
+    display: grid;
+    /*grid-template-rows: min-content min-content min-content min-content;*/
+    /*grid: auto-flow min-content / auto auto;*/
+}
+
+/*
+--card > header {
+    grid-column: 1 / 3;
+    order: -100;
+}
+--card > footer {
+    grid-column: 1 / 3;
+    order: 100;
+}
+
+
+--card-content-right {
+    grid-template-columns: min-content 1fr;
+}
+--card-content-right > div {
+    grid-column: 2 / 3;
+}
+
+--card-content-left {
+    grid-template-columns: 1fr min-content;
+}
+--card-content-left > div {
+    grid-column: 1 / 2;
+    order: -1;
+}
+
+--card-content-top > * {
+    grid-column: 1 / 3;
+}
+--card-content-top > div {
+    order: -1;
+}
+
+--card-content-bottom > * {
+    grid-column: 1 / 3;
+}
+*/
+
+
+.card__tag {
+    background-color: #fff;
+    align-self: start start;
+    /* align-self: start; */
+    /* justify-self: start; */
+    min-width: 100px;
+    padding: 8px;
+    margin-top: 1rem;
+}
+
+--card-cover-content-center > div {
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    margin: auto; /* 因為是grid的元素，這樣設定就可以水平垂直置中 */
+    text-align: center;
+}
+--card-cover-content-bottom > div {
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    /*padding: 1rem;*/
+    /*color: #fff;*/
+}
+
+
+
+
+div[role="table"],
+div[role="treegrid"] {
+  display: grid;
+  grid-auto-flow: row;
+
+  /* hgroup etc. */
+  & > :not([role="row"]),
+  & > [role="rowgroup"] > :not([role="row"]) {
+      grid-column: 1 / -1;
+  }
+
+  & > [role="rowgroup"],
+  & > [role="row"],
+  & > [role="rowgroup"] > [role="row"] {
+      display: grid;
+      grid-template-columns: subgrid;
+  }
+  & > [role="row"] > *,
+  & > [role="rowgroup"] > [role="row"] > *
+  {
+    &[aria-colspan=1] { grid-column-end: span 1; }
+    &[aria-colspan=2] { grid-column-end: span 2; }
+    &[aria-colspan=3] { grid-column-end: span 3; }
+    &[aria-colspan=4] { grid-column-end: span 4; }
+  }
+
+  & > [role="row"] > [role="rowheader"],
+  & > [role="rowgroup"] > [role="row"] > [role="rowheader"] {
+      font-weight: bold;
+  }
+
+  & > [role="row"] > [role="columnheader"],
+  & > [role="rowgroup"] > [role="row"] > [role="columnheader"] {
+      color: red;
+  }
+}
+

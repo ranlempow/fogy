@@ -1,0 +1,502 @@
+/*
+
+  ＴＯＤＯ: toolbar
+  TODO: snack container
+  TODO: 把 loading-attatch做成進度條
+  TODO: loading-bar-attatch
+  TODO: 把tab功能的page改成pane，以免舊名稱造成誤會
+  TODO: 定義Floating labels(from bootstrap)
+
+  block是帶有上下margin的元素，而且左右延伸，類似<p> <table>
+  box是帶有內部padding的元素，類似<blockquote> <form>
+
+  (?)inset是插入內文的元素，通常會左右置中，類似<figure>
+  (O)panel 可以擁有內部捲軸
+  (O)panel 可以有header footer
+
+  (O)card 是一種簡化的panel
+  toast 是一種簡化的panel
+  pagination? as tool bar?
+
+  .persistent
+  Persistent dialogs(modal) are not dismissed when
+  touching outside or pressing the esc key.
+  
+  ( ).fullscreen.modal             優先獨佔的全螢幕
+  (O).offcanvas.modal              優先獨佔的掛邊
+  (O).offcanvas                    共存的掛邊
+  (O)dialog.modal                  優先獨佔的彈出框，置中於螢幕
+  (X)dialog.modal[data-popup-at]   優先獨佔的彈出框，置於目標元素旁
+  ( ).contentmenu[data-popup-at]   共存的彈出框，置於目標元素旁
+  ( ).toast                        共存的彈出框，置於螢幕角落的容器
+
+  ( )form.c
+
+  這些都通稱的Ｃ元素容器
+
+  c 容器 (container)
+  d 容器 (media)，以grid為主的濃縮排列
+  d 容器可以包裝 c 容器
+  c 容器可以包裝 d 容器
+
+  d容器，panel 並單純帶有 padding，利用grid更緊湊的排列內部資料
+  d容器以水平排列為主，與c容器擅長垂直排列不同。
+  d容器還可以覆蓋排列。
+  d容器一樣可以有header/.content/footer，但會是水平排列。
+
+  .img: svg.icon as img
+
+  icon放置在header的正上方
+  header的按鈕群組貼齊 左上角 右上角
+  
+  
+
+
+  (O)<hr>分隔線左右延伸(可選)
+
+  (O)單圖排列
+
+  a.c: card 本身是按鈕可以 hover
+
+  (O)card 作為一個可以(左右換頁)的載體
+  card 通常拿來包覆彈出式contentmenu選單
+  card 通常拿來(分頁)
+  (X) card 會根據是否有額外元素來決定是否要用flex或是grid
+
+
+  (O) max-* 不能超過視窗大小，不能超過父.c的大小
+
+  結構如下
+  .c > header > hX, p, .icon, menu
+  .c > img
+  .c > .content(.page)
+  .c > footer > p, menu
+  .c > hr
+*/
+
+
+@layer card {
+
+:root {
+  --card-padding-factor-heirloom: 1;
+  --card-font-size-heirloom: 1rem;
+}
+
+:where(.c, .d)  {
+  --card-padding-block-base: 10px;
+  --card-padding-inline-base: 30px;
+  --card-padding-factor: var(--card-padding-factor-heirloom);
+
+  --card-padding-block:
+    calc(var(--card-padding-block-base) *
+         var(--card-padding-factor));
+  --card-padding-inline:
+    calc(var(--card-padding-inline-base) *
+         var(--card-padding-factor));
+
+  --card-radius: 4px;
+  --card-content-padding: 1em;
+
+  --bulma-border-weak: var(--border);
+  --card-border: 1px solid var(--border);
+  --card-header-border: 1px solid var(--bulma-border-weak);
+  --card-footer-border: 1px solid var(--bulma-border-weak);
+
+  --card-background-color: var(--background-alt);
+  --card-header-background-color: var(--background);
+  --card-footer-background-color: var(--background);
+
+  --card-header-padding-base: 0.75em;
+  --card-footer-padding-base: 0.75em;
+  --card-header-padding:
+    calc(var(--card-header-padding-base) *
+         var(--card-padding-factor));
+  --card-footer-padding:
+    calc(var(--card-footer-padding-base) *
+         var(--card-padding-factor));
+}
+
+
+:where(.c, .d) {
+  background-color: var(--card-background-color);
+  color: var(--text-main);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+
+  min-width: min-content;
+  min-height: min-content;
+
+  margin-inline-end: 6px;
+  margin-block-end: 6px;
+}
+
+dialog:where(.c, .d) {
+  max-width: calc(100vw - 80px);
+  max-height: calc(100vh - 40px);
+}
+
+.c {
+  padding-block: var(--card-padding-block);
+  padding-inline: var(--card-padding-inline);
+  font-size: var(--card-font-size-heirloom);
+
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.d {
+  padding-block: var(--card-padding-block);
+  padding-inline: var(--card-padding-inline);
+  font-size: var(--card-font-size-heirloom);
+
+  grid: [img main] auto / [img] min-content [main] auto;
+  display: grid;
+}
+
+:is(.d) > * {
+  grid-area: main;
+  margin-inline-start: var(--card-padding-inline);
+}
+
+:is(.d) > :is(svg, img) {
+  grid-area: img;
+  place-self: center center;
+  margin-inline-start: calc(var(--card-padding-inline) / 2);
+}
+
+
+
+
+/* style */
+
+/*
+    <p> paragraphs
+    <ul> <ol> <dl> lists
+    <h1> to <h6> headings
+    <blockquote> quotes
+    <em> and <strong>
+    <table> <tr> <th> <td> tables
+*/
+
+
+
+.c :where(ul, ol, p, figure, blockquote, table, details) {
+  margin-block: calc(1em * var(--card-padding-factor));
+}
+
+.c :where(.c, .d) {
+  /* 不會受到narrow影響，因為--card-padding-factor會被子容器覆寫 */
+  margin-block: 0.6em;
+}
+
+
+.narrow {
+  --card-padding-factor: 1;
+}
+
+.narrow-s {
+  --card-padding-factor: 0.6;
+}
+
+.narrow-xs {
+  line-height: 1.3;
+  --card-padding-factor: 0.4;
+}
+
+.narrow-descendant {
+  --card-padding-factor-heirloom: 1;
+}
+
+.narrow-s-descendant {
+  --card-padding-factor-heirloom: 0.6;
+}
+
+.narrow-xs-descendant {
+  line-height: 1.3;
+  --card-padding-factor-heirloom: 0.4;
+}
+
+.size-xl  { font-size: 1.500rem; }
+.size-l   { font-size: 1.250rem; }
+.size     { font-size: 1.000rem; }
+.size-s   { font-size: 0.875rem; }
+.size-xs  { font-size: 0.750rem; }
+
+.size-xl-descendant   { font-size: 1.500rem; --card-font-size-heirloom: 1.500rem; }
+.size-l-descendant    { font-size: 1.250rem; --card-font-size-heirloom: 1.250rem; }
+.size-descendant      { font-size: 1.000rem; --card-font-size-heirloom: 1.000rem; }
+.size-s-descendant    { font-size: 0.875rem; --card-font-size-heirloom: 0.875rem; }
+.size-xs-descendant   { font-size: 0.750rem; --card-font-size-heirloom: 0.750rem; }
+
+
+
+
+
+/* header and footer layout */
+
+:is(.c) > *:first-child {
+  margin-block-start: 0.4em;
+}
+
+:is(.c) > *:last-child {
+  margin-block-end: 0.4em;
+}
+
+/* padding hack */
+:is(.c) > header:first-child,
+:is(.c) > footer:last-child,
+:is(.c) > :is(.content, hr) {
+  margin-inline: calc(var(--card-padding-inline) * -1);
+  padding-inline: var(--card-padding-inline);
+}
+
+:is(.c) > header:first-child {
+  margin-block-start: calc(var(--card-padding-block) * -1);
+  padding-block: var(--card-header-padding);
+  border-bottom: var(--card-header-border);
+  background-color: var(--card-header-background-color);
+}
+:is(.c) > footer:last-child {
+  margin-block-end: calc(var(--card-padding-block) * -1);
+  padding-block: var(--card-footer-padding);
+  border-top: var(--card-footer-border);
+  background-color: var(--card-footer-background-color);
+}
+
+/* TODO: better method? */
+:is(.c) > header:not(:first-child) + * {
+  padding-block-start: calc(var(--card-content-padding) * 0.5);
+}
+
+:is(.c) > header > :where(h1, h2, h3, h4, h5, h6) {
+  margin-block: 0.75em;
+}
+
+:is(.c) > header {
+  display: flex;
+  flex-flow: row nowrap;
+  place-content: center space-between;
+  place-items: center end;
+/*   text-align: center; */
+}
+
+:is(.c) > footer {
+  display: flex;
+  flex-flow: row nowrap;
+  place-content: center end;
+  place-items: center end;
+}
+:is(.c) > header:first-child :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: 0px;
+}
+:is(.c) > :is(header, footer) :is(menu, .b) {
+  margin: 0;
+}
+
+/* img layout */
+
+:is(.c) > img:first-of-type {
+  height: auto;
+  min-height: 0px;
+  object-fit: cover;
+  flex-grow: 1;
+  margin-inline: calc(var(--card-padding-inline) * -1);
+  max-width: calc(100% + var(--card-padding-inline) * 2);
+}
+
+:is(.c):has(> img:first-child) {
+  padding-block-start: 0px;
+}
+
+:is(.c):has(> img:last-child) {
+  padding-block-end: 0px;
+}
+
+/* content layout */
+
+:is(.c) > .content {
+  overflow: auto;
+  overscroll-behavior: none;
+  flex-grow: 1;
+  padding-block: var(--card-content-padding);
+}
+
+:is(.c):has(img) > .content {
+  overflow: visible;
+  flex-grow: 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 有關於換頁 */
+
+:is(.c) > .page {
+/*   overflow-y: auto; */
+  overflow-x: hidden;
+}
+
+:is(.c) > .page {
+  position: absolute;
+  min-width: 100%;
+  top: 0;
+  left: 0;
+  transform: translate(-100%, 0);
+  transition: transform 0.1s ease-in;
+}
+
+:is(.c) > .page[data-active] {
+  position: static;
+  transform: none;
+}
+
+:is(.c) > .page[data-active] ~ .page {
+  transform: translate(100%, 0);
+}
+
+
+/* 有關於 modal */
+
+
+
+/* modal 打開時，鎖定主頁面的垂直捲軸 */
+body:has([aria-modal="true"]:not([aria-hidden="true"])) {
+/*   overflow: hidden; */
+}
+
+
+
+
+/* 有關於 offcanvas */
+
+
+:is(.c, .d) {
+  --offcanvas-hidden-translateX: 0%;
+  --offcanvas-hidden-translateY: 0%;
+  --offcanvas-translateX: 0%;
+  --offcanvas-translateY: 0%;
+  --animation-time-in:  var(--animation-reduced-to, 200ms);
+  --animation-time-out: var(--animation-reduced-to, 100ms);
+}
+
+:is(.c, .d)[aria-modal="true"] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  z-index: 100;
+/*   overflow: scroll; */
+/*   overscroll-behavior: none; */
+  /* 預設是.center */
+  --offcanvas-hidden-translateX: -50%;
+  --offcanvas-hidden-translateY: -52.5%;
+  --offcanvas-translateX: -50%;
+  --offcanvas-translateY: -50%;
+}
+
+
+:is(.c, .d).offcanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  z-index: 50;
+  --offcanvas-hidden-translateX: 0%;
+  --offcanvas-hidden-translateY: 0%;
+  --offcanvas-translateX: 0%;
+  --offcanvas-translateY: 0%;
+}
+
+:is(.c, .d).offcanvas.center {
+  top: 50%;
+  left: 50%;
+  --offcanvas-hidden-translateX: -50%;
+  --offcanvas-hidden-translateY: -52.5%;
+  --offcanvas-translateX: -50%;
+  --offcanvas-translateY: -50%;
+}
+
+:is(.c, .d).offcanvas.top {
+  top: 0;
+  --offcanvas-hidden-translateY: -100%;
+  --offcanvas-translateY: 0%;
+}
+
+:is(.c, .d).offcanvas.bottom {
+  top: auto;
+  bottom: 0px;
+  --offcanvas-hidden-translateY: 100%;
+  --offcanvas-translateY: 0%;
+}
+
+:is(.c, .d).offcanvas.left {
+  left: 0;
+  --offcanvas-hidden-translateX: -100%;
+  --offcanvas-translateX: 0%;
+}
+
+:is(.c, .d).offcanvas.right {
+  left: auto;
+  right: 0;
+  --offcanvas-hidden-translateX: 100%;
+  --offcanvas-translateX: 0%;
+}
+
+:is(.c, .d):where(.offcanvas, [aria-modal="true"])[aria-hidden="true"] {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(var(--offcanvas-hidden-translateX, 0))
+             translateY(var(--offcanvas-hidden-translateY, 0));
+}
+
+:is(.c, .d):where(.offcanvas, [aria-modal="true"]):not([aria-hidden="true"]) {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(var(--offcanvas-translateX, 0))
+             translateY(var(--offcanvas-translateY, 0));
+  transition: transform var(--animation-time-in) ease,
+              opacity var(--animation-time-in) ease;
+}
+
+
+/* 有關於 data-scrollable, TODO: */
+
+:is(.c)[data-scrollable="content"],
+:is(.c)[data-scrollable="section"],
+:is(.c)[data-scrollable="none"] {
+    overflow: hidden;
+}
+:is(.c)[data-scrollable="content"] > [aria-modal="true"] {
+    max-height: calc(100vh - 100px);
+    overflow: auto;
+}
+:is(.c)[data-scrollable="section"] section {
+    max-height: calc(100vh - 200px);
+    overflow: auto;
+}
+
+
+
+
+
+
+}
+
+
+
+
+
+

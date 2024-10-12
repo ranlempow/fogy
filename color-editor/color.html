@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html class="reset-content" data-build="true">
+<meta charset="utf-8">
+<script src="./easing.js"></script>
+<script src="./color-utils.js"></script>
+<script src="../fogy.js"></script>
+<script src="../lib/behavior.js"></script>
+<script src="https://codemirror.net/codemirror.js"></script>
+<script src="./cm-editor2.js"></script>
+
+<svg style="display: none;">
+<symbol viewBox="0 0 24 24" id="material-symbols-light-lock-outline"><path fill="currentColor" d="M6.616 21q-.672 0-1.144-.472T5 19.385v-8.77q0-.67.472-1.143Q5.944 9 6.616 9H8V7q0-1.671 1.165-2.835Q10.329 3 12 3t2.836 1.165T16 7v2h1.385q.67 0 1.143.472q.472.472.472 1.144v8.769q0 .67-.472 1.143q-.472.472-1.143.472zm0-1h10.769q.269 0 .442-.173t.173-.442v-8.77q0-.269-.173-.442T17.385 10H6.615q-.269 0-.442.173T6 10.616v8.769q0 .269.173.442t.443.173M12 16.5q.633 0 1.066-.434q.434-.433.434-1.066t-.434-1.066T12 13.5t-1.066.434Q10.5 14.367 10.5 15t.434 1.066q.433.434 1.066.434M9 9h6V7q0-1.25-.875-2.125T12 4t-2.125.875T9 7zM6 20V10z"></path></symbol>
+<symbol viewBox="0 0 24 24" id="material-symbols-light-lock-open-right-outline"><path fill="currentColor" d="M6.616 20h10.769q.269 0 .442-.173t.173-.442v-8.77q0-.269-.173-.442T17.385 10H6.615q-.269 0-.442.173T6 10.616v8.769q0 .269.173.442t.443.173M12 16.5q.633 0 1.066-.434q.434-.433.434-1.066t-.434-1.066T12 13.5t-1.066.434Q10.5 14.367 10.5 15t.434 1.066q.433.434 1.066.434M6 20V10zm.616 1q-.672 0-1.144-.472T5 19.385v-8.77q0-.67.472-1.143Q5.944 9 6.616 9H14V7q0-1.671 1.165-2.835Q16.329 3 18 3t2.836 1.165T22 7h-1q0-1.25-.875-2.125T18 4t-2.125.875T15 7v2h2.385q.67 0 1.143.472q.472.472.472 1.144v8.769q0 .67-.472 1.143q-.472.472-1.143.472z"></path></symbol>
+<symbol viewBox="0 0 512 512" id="game-icons-perspective-dice-six-faces-random"><path fill="currentColor" d="M255.76 44.764c-6.176 0-12.353 1.384-17.137 4.152L85.87 137.276c-9.57 5.536-9.57 14.29 0 19.826l152.753 88.36c9.57 5.536 24.703 5.536 34.272 0l152.753-88.36c9.57-5.535 9.57-14.29 0-19.825l-152.753-88.36c-4.785-2.77-10.96-4.153-17.135-4.153m-.824 53.11q13.52.146 24.31 6.192q7.38 4.136 9.666 9.438q2.21 5.261.26 13.865l-1.6 5.706q-1.59 6.125-.66 8.81q.854 2.645 4.242 4.544l3.39 1.898l-33.235 18.62l-3.693-2.067q-6.176-3.459-7.883-7.82q-1.782-4.402.594-14.005l1.524-5.748q1.33-5.135.26-8.418q-.98-3.336-4.444-5.277q-5.273-2.954-12.63-2.123q-7.433.79-15.35 5.225q-7.457 4.178-13.55 10.46q-6.167 6.243-10.587 14.288L171.9 138.21q7.977-8.01 15.676-14.013q7.7-6 16.262-10.8q22.464-12.586 41.78-14.967a69 69 0 0 1 9.32-.557zm50.757 56.7l26.815 15.024l-33.235 18.62l-26.816-15.023l33.236-18.62zM75.67 173.84c-5.753-.155-9.664 4.336-9.664 12.28v157.696c0 11.052 7.57 24.163 17.14 29.69l146.93 84.848c9.57 5.526 17.14 1.156 17.14-9.895V290.76c0-11.052-7.57-24.16-17.14-29.688l-146.93-84.847c-2.69-1.555-5.225-2.327-7.476-2.387zm360.773.002c-2.25.06-4.783.83-7.474 2.385l-146.935 84.847c-9.57 5.527-17.14 18.638-17.14 29.69v157.7c0 11.05 7.57 15.418 17.14 9.89L428.97 373.51c9.57-5.527 17.137-18.636 17.137-29.688v-157.7c0-7.942-3.91-12.432-9.664-12.278zm-321.545 63.752q9.83 2.05 17.954 5.013a99.6 99.6 0 0 1 15.68 7.325q19.82 11.445 30.218 26.082q10.398 14.55 10.398 31.04q0 8.46-3.168 13.364q-3.169 4.818-10.804 8.094l-5.2 1.92q-5.524 2.163-7.23 4.46q-1.705 2.207-1.705 6.092v3.885l-29.325-16.933v-4.23q-.001-7.08 2.68-10.97q2.681-3.977 11.292-7.467l5.2-2.006q4.63-1.815 6.742-4.567q2.191-2.704 2.192-6.676q0-6.041-3.9-11.66q-3.899-5.705-10.885-9.74q-6.58-3.798-14.217-5.272q-7.636-1.56-15.922-.645v-27.11zm269.54 8.607q2.282 0 4.232.493q10.398 2.543 10.398 19.034q0 8.46-3.168 17.023q-3.168 8.476-10.804 20.568l-5.2 7.924q-5.524 8.542-7.23 12.807q-1.705 4.178-1.705 8.063v3.885l-29.325 16.932v-4.23q0-7.08 2.68-14.067q2.683-7.073 11.292-20.504l5.2-8.01q4.63-7.164 6.742-12.354q2.191-5.238 2.192-9.21q0-6.042-3.898-7.158q-3.9-1.201-10.887 2.83q-6.58 3.801-14.215 11.145q-7.635 7.259-15.922 17.74v-27.11q9.83-9.3 17.95-15.718q8.126-6.417 15.68-10.777q16.106-9.3 25.99-9.307zm-252.723 94.515l29.326 16.93v30.736l-29.325-16.93v-30.735zm239.246 8.06v30.735l-29.325 16.93v-30.733l29.326-16.932z"></path></symbol>
+<symbol viewBox="0 0 24 24" id="mingcute-random-line"><g fill="none" fill-rule="evenodd"><path d="M24 0v24H0V0zM12.594 23.258l-.012.002l-.071.035l-.02.004l-.014-.004l-.071-.036c-.01-.003-.019 0-.024.006l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427c-.002-.01-.009-.017-.016-.018m.264-.113l-.014.002l-.184.093l-.01.01l-.003.011l.018.43l.005.012l.008.008l.201.092c.012.004.023 0 .029-.008l.004-.014l-.034-.614c-.003-.012-.01-.02-.02-.022m-.715.002a.023.023 0 0 0-.027.006l-.006.014l-.034.614c0 .012.007.02.017.024l.015-.002l.201-.093l.01-.008l.003-.011l.018-.43l-.003-.012l-.01-.01z"></path><path fill="currentColor" d="M18 3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm0 2H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1m-9.5 9a1.5 1.5 0 0 1 1.493 1.356l.007.154a1.5 1.5 0 0 1-2.993.144L7 15.5A1.5 1.5 0 0 1 8.5 14m7 0a1.5 1.5 0 0 1 1.493 1.356l.007.154a1.5 1.5 0 0 1-2.993.144L14 15.5a1.5 1.5 0 0 1 1.5-1.5M12 10.5a1.5 1.5 0 0 1 1.493 1.356l.007.154a1.5 1.5 0 0 1-2.993.144L10.5 12a1.5 1.5 0 0 1 1.5-1.5M8.5 7a1.5 1.5 0 0 1 1.493 1.356L10 8.51a1.5 1.5 0 0 1-2.993.144L7 8.5A1.5 1.5 0 0 1 8.5 7m7 0a1.5 1.5 0 0 1 1.493 1.356L17 8.51a1.5 1.5 0 0 1-2.993.144L14 8.5A1.5 1.5 0 0 1 15.5 7"></path></g></symbol>
+<symbol viewBox="0 0 24 24" id="material-symbols-close-small-outline"><path fill="currentColor" d="M8.4 17L7 15.6l3.6-3.6L7 8.425l1.4-1.4l3.6 3.6l3.575-3.6l1.4 1.4l-3.6 3.575l3.6 3.6l-1.4 1.4L12 13.4z"></path></symbol>
+</svg>
+
+
+<style>
+
+button {
+    border: none;
+    display: grid;
+    padding: 0px;
+}
+button:hover {
+    background: blue;
+}
+button:active {
+    background: red;
+}
+button[aria-selected=true] {
+    background: grey;
+}
+
+
+[aria-selected=true] {
+    color: red;
+}
+[aria-hidden=true] {
+    display: none;
+}
+[data-menu=".tab"] {
+    display: flex;
+}
+[data-menu=".tab"] > button {
+    padding: 2px 20px;
+    font-size: 20px;
+}
+[data-menu=".tab"] > button[aria-selected=true] {
+    background-color: lightgrey;
+}
+
+[data-menu=".variable"] {
+    display: contents;
+}
+
+.editors {
+    margin-top: 20px;
+}
+.cm-editor {
+    border: 1px solid grey;
+    height: 400px;
+}
+.cm-focused {
+    outline: none !important;
+}
+
+.icon {
+    width: 18px;
+    height: 18px;
+    place-self: center center;
+}
+.colors {
+    display: grid;
+    grid: auto-flow dense auto / 650px 1fr;
+    gap: 10px 10px;
+    align-items: start;
+}
+
+div.pair {
+    grid-column-start: 1;
+}
+div.gradient {
+    grid-column-start: 2;
+}
+div.unused-variables {
+    grid-column-start: 2;
+}
+
+div.spot {
+    aspect-ratio: 1;
+    border: 0px solid grey;
+    box-sizing: border-box;
+    border-radius: 25%;
+}
+div.spot:hover {
+    border: 4px solid grey;
+}
+.gradient {
+    --spot-size: 60px;
+    display: grid;
+    grid: none / repeat(auto-fill, var(--spot-size));
+    gap: 0px 10px;
+    align-items: start;
+}
+.gradient > * {
+    display: grid;
+    grid: var(--spot-size) / none;
+    grid-auto-rows: min-content;
+    gap: 3px 0px;
+    justify-items: center;
+}
+
+span.variable-label {
+    display: inline-grid;
+    grid: none / auto-flow;
+
+    min-width: 0;
+    word-wrap: break-word;
+/*     word-break: break-all; */
+
+    font-size: 0.750rem;
+    background: #efefef;
+    border: 1px solid lightgrey;
+    border-radius: 10px;
+    padding: 0px 0px 0px 5px;
+
+    cursor: default;
+}
+span.variable-label:hover {
+    background: #ffffff;
+}
+span.variable-label:has([aria-selected=true]) {
+    z-index: 1;
+}
+span.close {
+    display: grid;
+}
+.unused-variables {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 10px 5px;
+}
+
+
+
+
+.pair {
+    display: grid;
+    grid: 25px 25px 110px / 200px 180px 200px;
+    gap: 3px 5px;
+    background: lightgrey;
+    border: 2px solid #b0b0b0;
+    border-radius: 5px;
+    width: min-content;
+    padding: 3px;
+}
+.pair > .title {
+    grid-column: 1 / -1;
+    grid-row: 1 / span 1;
+    place-self: stretch end;
+}
+
+
+.pair-configure {
+    display: grid;
+    grid: auto-flow 1fr / 20px 1fr 20px;
+    gap: 3px 5px;
+    grid-column: auto / span 1;
+    grid-row: 2/-1;
+}
+.pair-configure > .tint-panel {
+    display: grid;
+    grid: subgrid / subgrid;
+    grid-column: 1 / span 1;
+    grid-row: 1/ span 5;
+}
+.pair-configure > .shade-panel {
+    display: grid;
+    grid: subgrid / subgrid;
+    grid-column: 3 / span 1;
+    grid-row: 1/ span 5;
+}
+
+:where(.tint-panel, .shade-panel) > .oklch-pick {
+    grid-row: 2/-1;
+}
+
+
+.pigment {
+    display: grid;
+    grid: auto-flow 1fr / 20px 1fr;
+    gap: 3px 5px;
+    grid-column: auto / span 1;
+    grid-row: 2 / span 2;
+}
+.pigment > .resets {
+    display: flex;
+    flex-direction:row-reverse;
+    justify-content: space-between;
+    grid-column: 1 / span 2;
+    grid-row: auto;
+}
+.pigment > .bars {
+    display: grid;
+    grid: subgrid / subgrid;
+    grid-column: 2 / span 1;
+    grid-row: auto / span 3;
+}
+.pigment > .preview {
+    display: grid;
+    grid: subgrid / subgrid;
+    grid-column: 2 / span 1;
+    grid-row: auto / span 1;
+}
+.pigment > .locks {
+    display: grid;
+    grid: subgrid / subgrid;
+    grid-column: auto / span 1;
+    grid-row: 2 / span 4;
+}
+.pigment input[type="text"] {
+    width: 5em;
+    place-self: center center;
+}
+
+
+.oklch-pick {
+    position: relative;
+    background: linear-gradient(to right in oklch, blue, red);
+}
+.oklch-pick.vertical {
+    background: linear-gradient(to bottom in oklch, blue, red);
+}
+.oklch-pick.okl {
+    background: linear-gradient(to right in oklch,
+        oklch(0% calc(var(--okc) * 0.4) calc(var(--okh) * 360)),
+        oklch(100% calc(var(--okc) * 0.4) calc(var(--okh) * 360))
+    );
+    --circle-offset: calc(var(--okl) * 100%);
+}
+.oklch-pick.okc {
+    background: linear-gradient(to right in oklch,
+        oklch(var(--okl) 0.01 calc(var(--okh) * 360)),
+        oklch(var(--okl) 0.40 calc(var(--okh) * 360))
+    );
+    --circle-offset: calc(var(--okc) * 100%);
+}
+.oklch-pick.okh {
+    background: linear-gradient(to right in oklch longer hue,
+        oklch(var(--okl) calc(var(--okc) * 0.4) 0),
+        oklch(var(--okl) calc(var(--okc) * 0.4) 360)
+    );
+    --circle-offset: calc(var(--okh) * 100%);
+}
+.oklch-pick.tint {
+    background: linear-gradient(to bottom in oklch,
+        oklch(100% 0.4 0),
+        oklch(50% 0.0 0)
+    );
+    --circle-offset: calc(var(--tint) * 100%);
+}
+.oklch-pick.shade {
+    background: linear-gradient(to bottom in oklch,
+        oklch(100% 0.5 0),
+        oklch(0% 0.5 0)
+    );
+    --circle-offset: calc(var(--shade) * 100%);
+}
+.oklch-select-circle {
+    border: 2px solid rgba(255,255,255, 0.70);
+    mix-blend-mode: difference;
+    margin-top: -7px;
+    margin-left: -7px;
+    height: 11px;
+    width: 11px;
+    border-radius:50%;
+    position: absolute;
+    top: 50%;
+    left:  var(--circle-offset, 0px);
+    pointer-events: none;
+}
+
+.vertical > .oklch-select-circle {
+    left: 50%;
+    top:  var(--circle-offset, 0px);
+}
+
+</style>
+
+
+<script>
+
+fogyReady(() => {
+    function slide({type, clicks, vertical=false}) {
+        let clickFn = e => {
+            const change = {};
+            change[type] = vertical ? (e.offsetY + 1) / _slide.offsetHeight :
+                                      (e.offsetX + 1) / _slide.offsetWidth;
+            clicks && clicks([change]);
+        };
+        let _slide = h(`div.oklch-pick${vertical ? '.vertical' : ''}.${type}`,
+            h('div.oklch-select-circle'), {
+                onclick: e => clickFn(e),
+                onmousemove: e => e.buttons === 1 && clickFn(e),
+            });
+        return _slide;
+    }
+
+    function Picker({okl, okc, okh, change, to}) {
+        if (to.state.change !== change) {
+            to.state.l_slider = slide({type: 'okl', clicks: change});
+            to.state.c_slider = slide({type: 'okc', clicks: change});
+            to.state.h_slider = slide({type: 'okh', clicks: change});
+            to.state.change = change;
+        }
+        return h('div.bars',
+                 { style: `--okl: ${okl}; --okc: ${okc}; --okh: ${okh};`},
+                 to.state.l_slider, to.state.c_slider, to.state.h_slider);
+    }
+
+    function Preview({rgb, hex, to, change}) {
+        if (to.state.change !== change) {
+            to.state.hex_input = h('input[type="text"]', {
+                onchange: e => change([{'hex': to.state.hex_input.value}]),
+            });
+            to.state.change = change;
+        }
+        to.state.hex_input.value = hex;
+        return h('div.preview', {
+                style: `background-color: rgb(${rgb.r}, ${rgb.g}, ${rgb.b});`,
+            }, to.state.hex_input,
+        );
+    }
+    function Resets({linkOkl, linkOkc, linkOkh, change, to}) {
+        const symbol = 'mingcute-random-line';
+        let random_button = h('button',
+            `<svg class="icon"><use xlink:href="#${symbol}"/></svg>`, {
+            onclick: e => {
+                let changes = {};
+                !linkOkl && (changes.okl = Math.random());
+                !linkOkc && (changes.okc = Math.random());
+                !linkOkh && (changes.okh = Math.random());
+                change([changes]);
+            },
+        });
+        return h('div.resets', random_button);
+    }
+
+    function Locks({linkOkl, linkOkc, linkOkh, change}) {
+        const makeLockButton = (attrs, link) => {
+            const symbol = link ? 'material-symbols-light-lock-outline' :
+                                  'material-symbols-light-lock-open-right-outline';
+            return h(
+                `button[aria-selected=${link ? 'true' : 'false'}]`,
+                `<svg class="icon"><use xlink:href="#${symbol}"/></svg>`, {
+                    onclick: e => {
+                        let changes = Object.fromEntries(attrs.map(a => [a, !link]));
+                        change([changes]);
+                    },
+                });
+        }
+        return h('div.locks', makeLockButton(['linkOkl'], linkOkl),
+                              makeLockButton(['linkOkc'], linkOkc),
+                              makeLockButton(['linkOkh'], linkOkh),
+                              makeLockButton(['linkOkl', 'linkOkc', 'linkOkh'],
+                                             linkOkl && linkOkc && linkOkh));
+    }
+
+    function Adj({tint, shade, change}) {
+        // Tints and shades
+        let symbol = 'material-symbols-close-small-outline';
+        let tint_panel = h('div.tint-panel',
+            { style: `--tint: ${tint}` },
+            slide({type: 'tint', clicks: change, vertical: true}),
+            h('button',
+                `<svg class="icon"><use xlink:href="#${symbol}"/></svg>`, {
+                onclick: e => change([{tint: 0.5}]),
+            }),
+        );
+        let shade_panel = h('div.shade-panel',
+            { style: `--shade: ${shade}` },
+            slide({type: 'shade', clicks: change, vertical: true}),
+            h('button',
+                `<svg class="icon"><use xlink:href="#${symbol}"/></svg>`, {
+                onclick: e => change([{shade: 0.5}]),
+            }),
+        );
+        return h(h, tint_panel, shade_panel);
+    }
+    function PairConfigure({step,
+                   oklEazing, okcEazing, okhEazing, hueDist,
+                   tint, shade,
+                   change}) {
+
+        const makeEasingOptions = current => {
+            const options = [];
+            const addOption = easing => {
+                options.push(`<option ${current === easing ? 'selected' : ''} value="${easing}">${easing}</option>`);
+            };
+            addOption('linear');
+            for (const func of ['Sine', 'Cubic', 'Quart', 'Quint', 'Expo']) {
+                for (const curve of ['In', 'Out', 'InOut']) {
+                    addOption(`ease${curve}${func}`);
+                }
+            }
+            return options;
+        }
+        const makeStepOptions = current => {
+            return [2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => `<option ${current === i ? 'selected' : ''} value="${i}">${i} step</option>`)
+        }
+        const makeHueOptions = current => {
+            return ['short', 'long'].map(s => `<option ${current === s ? 'selected' : ''} value="${s}">${s} hue</option>`)
+        }
+        let stepSelect = h('select', makeStepOptions(step), {
+            onchange: e => change([{step: parseInt(e.target.value)}]),
+        });
+        let oklEazingSelect = h('select', makeEasingOptions(oklEazing), {
+            onchange: e => change([{oklEazing: e.target.value}]),
+        });
+        let okcEazingSelect = h('select', makeEasingOptions(okcEazing), {
+            onchange: e => change([{okcEazing: e.target.value}]),
+        });
+        let okhEazingSelect = h('select', makeEasingOptions(okhEazing), {
+            onchange: e => change([{okhEazing: e.target.value}]),
+        });
+        let hueSelect = h('select', makeHueOptions(hueDist), {
+            onchange: e => change([{hueDist: e.target.value}]),
+        });
+
+        return h('div.pair-configure',
+            stepSelect,
+            oklEazingSelect,
+            okcEazingSelect,
+            okhEazingSelect,
+            hueSelect,
+            h(Adj)('adj', props => props),
+        );
+
+    }
+    function Pigment(index) {
+        const getter = props => props[`color${index}`];
+        return h('div.pigment',
+                   [h(Locks)(`locks${index}`, getter),
+                    h(Resets)(`resets${index}`, getter),
+                    h(Picker)(`picker${index}`, getter),
+                    h(Preview)(`preview${index}`, getter)]);
+    }
+
+    function Pair({color1, color2, step,
+                   oklEazing, okcEazing, okhEazing, hueDist,
+                   tint, shade,
+                   change, remove}) {
+        let symbol = 'material-symbols-close-small-outline';
+        let close_button = h('button',
+                             `<svg class="icon"><use xlink:href="#${symbol}"/></svg>`, {
+            onclick: e => {
+                remove();
+            },
+        });
+        let configureEl = PairConfigure({
+            step, oklEazing, okcEazing, okhEazing, hueDist,
+            tint, shade, change
+        });
+        return h('div.pair', h('div.title', close_button),
+                 Pigment(1), configureEl, Pigment(2));
+    }
+
+    function Gradient({gradients, pairIndex, variableArray, changeVariable}) {
+        const f = (color, i) => {
+            let [okl, okc, okh] = [color.okl, color.okc * 0.4, color.okh * 360];
+            let spot = h('div.spot', {
+                style: `background-color: oklch(${okl} ${okc} ${okh});`,
+                onclick: e => {
+                    changeVariable([{selected: {pairIndex, gradientIndex: i + 1}}]);
+                },
+            });
+            return h('div', spot, variableArray[i]);
+        };
+        return h('div.gradient', gradients.map(f));
+    }
+
+    function UnusedVariables({props, variableSpans}) {
+        let unused = [];
+        for (const k of Object.keys(props.variables)) {
+            if (!props.variables[k].pairIndex) {
+                unused.push(k);
+            }
+        }
+        return h('div.unused-variables', unused.map(k => variableSpans[k]))
+    }
+
+    function Editors({output, to}) {
+        if (!to.state.init) {
+            to.state.change = e => {
+                if (e.docChanged) {
+                    console.log(e);
+                    console.log(e.state.doc.toString())
+                }
+            }
+            to.state.editorView = createCodeMirrorEditor(to.state.change, output);
+            to.state.init = true;
+        }
+        let tab1 = h('div#tab-a',
+                     {attribute:{'aria-hidden': 'true'}},
+                     to.state.editorView.dom);
+        let el = h('div', {
+            'data-menu': '.tab',
+            style: '--selection: 1; --allow-deselect: false'
+        }, [
+            h('button.tab', {attribute:{'aria-controls': 'tab-a',
+                                        'aria-setsize': '-1',
+                                        'aria-selected': 'false',
+                                        tabindex: "-1"}}, 'tab A'),
+            h('button.tab', {attribute:{'aria-controls': 'tab-b',
+                                        'aria-setsize': '-1',
+                                        'aria-selected': 'false',
+                                         tabindex: "-1"}}, 'tab B'),
+        ]);
+        h(el, {"+onclick": function onclick(e) {selection_behavior(e);}});
+
+        return h('div.editors', el,
+                 tab1,
+                 h('div#tab-b', {attribute:{'aria-hidden': 'true'}}, 'Context B'),);
+    }
+
+    function calcColor(color) {
+        let [r, g, b] = oklch2rgb([color.okl, color.okc * 0.4, color.okh * 360]);
+        color.rgb = {
+            r: Math.max(0, Math.min(Math.floor(r * 256), 255)),
+            g: Math.max(0, Math.min(Math.floor(g * 256), 255)),
+            b: Math.max(0, Math.min(Math.floor(b * 256), 255)),
+        };
+        color.hex = rgbToHex(color.rgb.r, color.rgb.g, color.rgb.b);
+    }
+    function fromHex(hex) {
+        let rgb = hexToRgb(hex);
+        rgb = [rgb.r / 255, rgb.g / 255, rgb.b / 255];
+        let [okl, okc, okh] = rgb2oklch(rgb);
+        okc = okc / 0.4;
+        okh = (okh || 0) / 360;
+        return {okl, okc, okh};
+    }
+
+    class Model {
+
+    }
+
+
+    function App({props}) {
+        
+        const makeColorProps = (pairIndex, index, oldColor) => {
+            const change = changes => {
+                for (const c of changes) {
+                    if (c.hex) {
+                        Object.assign(color, fromHex(c.hex));
+                        continue;
+                    }
+                    color.okl = c.okl !== undefined ? c.okl : color.okl;
+                    color.okc = c.okc !== undefined ? c.okc : color.okc;
+                    color.okh = c.okh !== undefined ? c.okh : color.okh;
+                    color.linkOkl = c.linkOkl !== undefined ? c.linkOkl : color.linkOkl;
+                    color.linkOkc = c.linkOkc !== undefined ? c.linkOkc : color.linkOkc;
+                    color.linkOkh = c.linkOkh !== undefined ? c.linkOkh : color.linkOkh;
+                }
+                let ref = props.pairs[pairIndex-2]
+                ref = ref && ref[`color${index}`];
+                if (ref) {
+                    color.okl = color.linkOkl ? ref.okl : color.okl;
+                    color.okc = color.linkOkc ? ref.okc : color.okc;
+                    color.okh = color.linkOkh ? ref.okh : color.okh;
+                }
+                calcColor(color);
+                let thisPair = props.pairs[pairIndex - 1];
+                let nextPair = props.pairs[pairIndex + 1 - 1];
+                if (nextPair) {
+                    nextPair[`color${index}`].change([]);
+                }
+                let pairSlot = this.slots[`pair${pairIndex}`];
+                update(pairSlot.slots[`picker${index}`]);
+                update(pairSlot.slots[`locks${index}`]);
+                update(pairSlot.slots[`preview${index}`]);
+                update(pairSlot.slots[`resets${index}`]);
+
+                thisPair.generate();
+            };
+            let color = {okl: Math.random(),
+                         okc: Math.random(),
+                         okh: Math.random(),
+                         linkOkl: false,
+                         linkOkc: false,
+                         linkOkh: false,
+                         ...(oldColor ?? {}),
+                         pairIndex, index, change};
+            calcColor(color);
+            return color;
+        }
+        const addPair = (pairIndex, oldProps) => {
+            const generate = () => {
+                pair.gradients.length = 0;
+                for (let i = 0; i <= pair.step; i++) {
+                    let t = i / pair.step;
+                    let okl_t = window[pair.oklEazing](t);
+                    let okc_t = window[pair.okcEazing](t);
+                    let okh_t = window[pair.okhEazing](t);
+                    let okl = pair.color1.okl * (1-okl_t) + pair.color2.okl * (okl_t);
+                    let okc = pair.color1.okc * (1-okc_t) + pair.color2.okc * (okc_t);
+                    let tt = t * 2;
+                    let tint_t = linear(tt < 1 ? tt : (2-tt));
+                    okl -= (pair.shade - 0.5) * 1.2 * tint_t
+                    okc -= (pair.tint - 0.5) * 1.6 * tint_t
+                    let srcOkh = pair.color1.okh;
+                    let dstOkh = pair.color2.okh;
+                    if ( (pair.hueDist === 'short' &&
+                          Math.abs(srcOkh - dstOkh) < 0.5) ||
+                         (pair.hueDist === 'long' &&
+                          Math.abs(srcOkh - dstOkh) >= 0.5)) {
+                    } else if (srcOkh > dstOkh) {
+                        srcOkh -= 1;
+                    } else {
+                        dstOkh -= 1;
+                    }
+                    okl = Math.max(0, Math.min(okl, 1));
+                    okc = Math.max(0, Math.min(okc, 1));
+                    let okh = srcOkh * (1-okh_t) + dstOkh * (okh_t);
+                    okh = okh < 0 ? okh + 1 : okh;
+                    pair.gradients[i] = {okl, okc, okh};
+                };
+                let gradientSlot = this.slots[`gradient${pairIndex}`];
+                update(gradientSlot);
+            };
+            const change = changes => {
+                for (const c of changes) {
+                    pair.step = c.step ?? pair.step;
+                    pair.oklEazing = c.oklEazing ?? pair.oklEazing;
+                    pair.okcEazing = c.okcEazing ?? pair.okcEazing;
+                    pair.okhEazing = c.okhEazing ?? pair.okhEazing;
+                    pair.hueDist = c.hueDist ?? pair.hueDist;
+                    pair.tint = c.tint ?? pair.tint;
+                    pair.shade = c.shade ?? pair.shade;
+                }
+                let pairSlot = this.slots[`pair${pairIndex}`];
+                update(pairSlot.slots[`adj`]);
+                pair.generate();
+            }
+            const remove = () => {
+                if (props.pairs.length <= 1) {
+                    return;
+                }
+                let pairs = props.pairs.slice();
+                props.pairs.length = 0;
+                pairs.splice(pairIndex - 1, 1);
+                pairs.map((p, i) => {
+                    addPair(i+1, p);
+                });
+                props.pairs[0].color1.change([]);
+                props.pairs[0].color2.change([]);
+                update(this);
+            }
+            const pair = {
+                step: 2,
+                oklEazing: 'linear',
+                okcEazing: 'linear',
+                okhEazing: 'linear',
+                hueDist: 'short',
+                tint: 0.5,
+                shade: 0.5,
+                gradients: [],
+                ...(oldProps ?? {}),
+                color1: makeColorProps(pairIndex, 1, oldProps?.color1),
+                color2: makeColorProps(pairIndex, 2, oldProps?.color2),
+                generate,
+                change,
+                remove,
+            };
+            pair.generate();
+            props.pairs.push(pair);
+        }
+        if (!props.pairs?.length) {
+            props.pairs = [];
+            addPair(1);
+        }
+        const addPairButton = h('button', '新增漸層', {
+            onclick: e => {
+                addPair(props.pairs.length + 1);
+                update(this);
+            },
+        });
+        props.output = `
+        :root {
+          --surface-0: oklch(96% 0.005 300);
+          --surface-1: oklch(100% 0 0);
+          --surface-2: oklch(99% 0 0 / 85%);
+          --text-primary: oklch(0% 0 0);
+          --text-secondary: oklch(54% 0 0);
+          --accent: oklch(57% 0.18 286);
+          --danger: oklch(59% 0.23 7);
+        }
+
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --surface-0: oklch(0% 0 0);
+            --surface-1: oklch(29% 0.01 300);
+            --surface-2: oklch(29% 0 0 / 85%);
+            --text-primary: oklch(100% 0 0);
+          }
+        }`;
+
+        const changeVariable = changes => {
+            for (const change of changes) {
+                if (change.selected) {
+                    const root = this.parentNode.querySelector('[data-menu=".variable"]');
+                    const selected = root.querySelector('.variable[aria-selected="true"]');
+                    if (selected) {
+                        let k = selected.textContent;
+                        const pair = props.pairs[change.selected.pairIndex - 1];
+                        props.variables[k].pairIndex = change.selected.pairIndex;
+                        props.variables[k].gradientPos =
+                            (change.selected.gradientIndex - 1) /
+                            (pair.gradients.length - 1);
+                        h(selected, {attribute: {
+                            'aria-selected': 'false',
+                            'tabindex': '-1',
+                        }});
+                    }
+                } else if (change.remove) {
+                    let k = change.remove;
+                    props.variables[k].pairIndex = null;
+                    const selected = variableSpans[k].querySelector('.variable');
+                    h(selected, {attribute: {
+                        'aria-selected': 'false',
+                        'tabindex': '-1',
+                    }});
+                }
+            }
+            for (let pairIndex=1; pairIndex<=props.pairs.length; pairIndex++) {
+                let gradientSlot = this.slots[`gradient${pairIndex}`];
+                update(gradientSlot);
+            }
+            update(this.slots['unused-variables']);
+        }
+        const makeVariableSpan = k => {
+            let symbol = 'material-symbols-close-small-outline';
+            let close_button = h('span.close',
+                `<svg class="icon"><use xlink:href="#${symbol}"/></svg>`, {
+                onclick: e => {
+                    console.log(e);
+                    changeVariable([{remove: k}])
+                },
+            });
+            let variable_button = h('span.variable',
+                                    {attribute:{'aria-setsize': '-1'}}, k, {
+                onclick: e => {
+                    changeVariable([]);
+                    selection_behavior(e);
+                },
+            });
+            return h('span.variable-label', variable_button, close_button);
+        }
+
+        const variableSpans = Object.fromEntries(
+                Object.keys(props.variables).map(k => [k, makeVariableSpan(k)]));
+
+        const variableMenu = () => {
+            return h('div.variable-menu',
+                {'data-menu': '.variable', style: '--selection: 1;'},
+                props.pairs.map((p, i) => h(Gradient)(`gradient${i+1}`, ({props}) => {
+                    const pair = props.pairs[i];
+                    const variableArray = pair.gradients.map(() => []);
+                    for (const k of Object.keys(variableSpans)) {
+                        let v = props.variables[k];
+                        if (v.pairIndex === i + 1) {
+                            let gradientIndex = Math.round(
+                                    v.gradientPos * (pair.gradients.length - 1));
+                            variableArray[gradientIndex].push(variableSpans[k]);
+                            // variableArray[v.gradientIndex - 1].push(variableSpans[k]);
+                        }
+                    }
+                    return {
+                        ...pair,
+                        pairIndex: i+1,
+                        variableArray,
+                        changeVariable,
+                    };
+                })),
+                [h(UnusedVariables)('unused-variables',
+                                    ({props}) => ({props, variableSpans}))],
+            );
+        }
+        let workspace = h('div.colors',
+            props.pairs.map((p, i) => h(Pair)(`pair${i+1}`, p)),
+            variableMenu(),
+            addPairButton);
+        return h('div', workspace, [h(Editors)('editors', props)]);
+    }
+
+    ready(() => {
+        // localStorage.setItem("myCat", "Tom");
+        const props = {
+            variableDefine: [],
+            variables: {
+                abc: {pairIndex: 1, gradientPos: 0},
+                'p124567-abcdef-xy': {pairIndex: null, gradientPos: 0},
+                def: {pairIndex: 1, gradientPos: 1},
+                xyz: {pairIndex: null, gradientPos: 0},
+                'p124567-abcdef': {pairIndex: null, gradientPos: 0},
+                'p124567-abcdef1': {pairIndex: null, gradientPos: 0},
+                'p124567-abcdef2': {pairIndex: null, gradientPos: 0},
+                'p124567-abcdef3': {pairIndex: null, gradientPos: 0},
+                'p12asdasdasd4567-abcdef4': {pairIndex: null, gradientPos: 0},
+                'p124567-abcdef5': {pairIndex: null, gradientPos: 0},
+                'p124567-abcdef6': {pairIndex: null, gradientPos: 0},
+            },
+        };
+        let slot = mount(h(App)({props}), {contentOf: "#app"});
+    });
+});
+</script>
+
+<body>
+<div id="app"></div>
+</body>

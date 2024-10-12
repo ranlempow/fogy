@@ -1,0 +1,446 @@
+
+/*
+
+## 繼承表
+
+pushable
+  radio
+  checkbox
+  button
+  @mixin(icon)
+  @mixin(ripple)
+  @mixin(desc)
+  (O)icon-btn
+  (X)menu-btn
+
+group
+  (O)radio-group
+  (O)checkbox-group
+  (O)segmented-btn
+  chip-group
+  toolbar
+  actions
+  top-app-bar
+  bottom-app-bar
+  (O)nav-bar
+  (O)nav-rail
+  (O)menu (pushables)
+
+  chip
+  (O)badges
+
+
+
+sheet/popup/bubble
+  card
+    figure
+  treegrid
+    list
+    table
+
+  window
+    dialog
+    side-sheet
+  tooltip
+
+panel
+
+block
+
+
+
+
+改良:
+對於panels的幾種表示方式
+1. 橫列
+2. (O)直列
+2. (X)橫列/直列 + 頁籤 + scrollspy
+3. (O)頁籤
+4. (O)左右換頁
+5. (X)左右循環換頁
+6. (O)先顯示tab選單，選完換頁到panel
+
+展示型panels？
+
+panel裡面可以有panel/panels/window
+panel可內含toolbars
+panel可擁有展開功能 <detail class="panel">
+panel可以用divider分割區域
+panel可以蓋上overlay，例如說loading
+
+window是panels的容器，有幾種展示panels的方式
+window可以是list的容器?
+window可以變成modal(dialog)/overlay(dialog?)/popup(dropdown)/plain
+window可以向下拖關閉
+(O)window @mixin(speech-bubble)
+
+
+## btn-like/btn-like-group
+
+chip 是一種不能按的 btn
+chip-group 與 btn-group 一樣
+badges 與 chip 樣式相似
+badges 可以裝飾 icon/chip/btn
+
+toolbars 是一種 btn-group
+actions 是一種 toolbars
+nav 是一種 toolbars 或是 menu
+
+
+TODO: 向上滑出現top-app-bar
+
+
+對於list的幾種表現方式
+(O)直接展開ul
+(O)換頁ul
+(X)頁籤切換式ul
+浮動式(fixedpos)ul，類似combobox (list in window)
+
+按上一頁/按ESC/按X/按標題，回到上一層
+
+
+## input系列
+
+(O)漂亮的button
+自己反白的checkbox(長得像btn)
+(O)漂亮的checkbox
+(O)開關式checkbox
+(O)漂亮的radio
+(X使用list)漂亮的select multiple
+或是重新設計的現代多重選單，類似於增加tag的操作方法
+
+Info提示
+
+
+## 折疊
+
+(O)如同summary一樣的下拉式元件
+(O)向下箭頭
+(O)向右箭頭
+(O)自動浮出的按鈕選單
+
+
+## Item & Group
+
+grid-list - listiem { display: contents; }
+
+<ul role="treegrid">
+<ul> <role="list"> <role="menu"> <role="menubar">
+<li> <role="listitem"> <role="menuitem">
+<li role="group">
+  <hgroup>
+  <ul>
+
+
+## 視窗
+
+modal的dialog，dialog.showModal()
+offcanvas的dialog，這很簡單
+offcanvas的nav，怎麼改dialog.show();？
+*/
+
+
+
+/*
+.modal.fade {
+
+}
+
+.modal-details summary {
+  display: block;
+}
+
+.modal-details[open] > summary > *:nth-child(1) {
+  background-color: white;
+}
+.modal-details[open] > summary > .modal-background {
+  position: fixed;
+  z-index: -10;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+  background-color: rgba(128, 128, 128, 0.5);
+}
+
+[role="dialog"] {
+  background-color: cyan;
+  position: fixed;
+  top: 30px;
+  left: 0px;
+  bottom: 0px;
+  margin: 0px;
+  border: none;
+  border-radius: 10px;
+}
+*/
+
+
+
+button {
+  color: gray;
+  padding: 10px;
+  border:none;
+  border-radius:5px;
+}
+
+
+dialog {
+  padding: 0px;
+  /*box-sizing: border-box;*/
+}
+
+dialog {
+  position: absolute;
+  margin: 0px;
+  width: 240px;
+  --fixedpos-main: align-start;
+  --fixedpos-cross: end;
+  --fixedpos-closeup: 0;
+  --fixedpos-offset: 0;
+  overflow: hidden;
+  /*overflow-x: hidden;*/
+}
+
+section.page {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+section.page {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  transform: translate(-100%, 0);
+  transition: transform 0.4s ease-in;
+}
+
+section.page[data-active] {
+  position: static;
+  transform: translate(0, 0);
+}
+
+section.page[data-active] ~ section.page {
+  transform: translate(100%, 0);
+}
+
+
+
+  .panel {
+    /* 捲動不會擴散到外層overlay */
+    overscroll-behavior: contain;
+  }
+
+  .panels > :where([role="tablist"], [role="toolbar"]) {
+    display: none;
+  }
+
+  .panels-tab > div[role="tablist"] {
+    display: block;
+  }
+  .panels-menu > :where(ul[role="tablist"], [role="toolbar"]) {
+    display: block;
+  }
+  .panels-slide > [role="toolbar"] {
+    display: block;
+  }
+
+  .panels > .panel-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :where(.panels-slide, .panels-tab) > .panel-container {
+    position: relative;
+    display: block;
+    & > .panel {
+      position: absolute;
+      width: 100%;
+      top: 0;
+      left: 0;
+      transition: transform 0.3s ease-in-out, opacity 0.2s ease-in;
+    }
+    & > .panel {
+      opacity: 0;
+      transform: translate(-20%, 0);
+    }
+    & > .panel[aria-current] {
+      opacity: 1;
+      position: static;
+      transform: translate(0, 0);
+    }
+    & > .panel[aria-current] ~ .panel {
+      transform: translate(20%, 0);
+    }
+  }
+
+
+  /*
+  :where(.panels-slide, .panels-tab) > .panel-container {
+    position: relative;
+    display: block;
+  }
+
+  :where(.panels-slide, .panels-tab) > .panel-container >
+  .panel {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease-in-out, opacity 0.2s ease-in;
+  }
+
+  :where(.panels-slide, .panels-tab)  > .panel-container >
+  .panel {
+    opacity: 0;
+    transform: translate(-20%, 0);
+  }
+
+  :where(.panels-slide, .panels-tab)  > .panel-container >
+  .panel[aria-current] {
+    opacity: 1;
+    position: static;
+    transform: translate(0, 0);
+  }
+
+  :where(.panels-slide, .panels-tab)  > .panel-container >
+  .panel[aria-current] ~ .panel {
+    transform: translate(20%, 0);
+  }
+  */
+
+
+
+
+
+
+
+
+
+/* samepage */
+
+.autohide ul {
+  overflow-y: auto;
+}
+
+.autohide li[data-active] > ul {
+  transform: translate(0);
+}
+
+.autohide li > ul {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: white;
+  transform: translate(100%, 0);
+  transition: transform 0.4s ease-in;
+}
+
+
+
+li.flippage > ul {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: white;
+  transform: translate(100%, 0);
+  transition: transform 0.4s ease-in;
+}
+
+li.flippage[data-active] > ul {
+  transform: translate(0);
+}
+
+
+
+li.expand > ul {
+  display: none;
+}
+
+li.expand[data-active] > ul {
+  display: block;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+@layer speech-bubble {
+
+  .speech-bubble {
+    /* position: relative; */
+    /* background: var(--background); */
+
+    &:before {
+        pointer-events: none;
+        z-index: -1;
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        border: var(--bubble-size, 1.125em) solid transparent;
+        --negative-bubble-size: calc(0px - var(--bubble-size, 1.125em));
+
+        transition-duration: var(--bubble-duration);
+        transition-property: transform;
+    }
+
+    &.bubble-left:before {
+        left: 0;
+        top: 50%;
+        border-right-color: var(--background);
+        border-left: 0;
+        margin-top: var(--negative-bubble-size);
+        /*margin-left: var(--negative-bubble-size);*/
+        transform: translate(var(--negative-bubble-size), 0);
+    }
+
+    &.bubble-right:before {
+        right: 0;
+        top: 50%;
+        border-left-color: var(--background);
+        border-right: 0;
+        margin-top: var(--negative-bubble-size);
+        /*margin-right: var(--negative-bubble-size);*/
+        transform: translate(var(--bubble-size), 0);
+    }
+
+    &.bubble-top:before {
+        top: 0;
+        left: 50%;
+        border-bottom-color: var(--background);
+        border-top: 0;
+        margin-left: var(--negative-bubble-size);
+        /*margin-top: var(--negative-bubble-size);*/
+        transform: translate(0, var(--negative-bubble-size));
+    }
+
+    &:not(.bubble-left, .bubble-right, .bubble-top):before {
+        bottom: 0;
+        left: 50%;
+        border-top-color: var(--background);
+        border-bottom: 0;
+        margin-left: var(--negative-bubble-size);
+        transform: translate(0, var(--bubble-size));
+        /*margin-bottom: var(--negative-bubble-size);*/
+    }
+
+    /*.speech-bubble:not(:hover, :focus, :active):before,*/
+    &[hidden]:before {
+        transform: translate(0, 0);
+    }
+  }
+}
+

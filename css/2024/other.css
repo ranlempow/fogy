@@ -1,0 +1,737 @@
+
+/* 以下不再是reset */
+
+@layer other {
+
+:root {
+  --animation-duration: 0.1s;
+
+  --btn-padding-inline: 1.75ch;
+  --btn-padding-block: .75ch;
+  --btn-border-radius: .5ch;
+
+  --text-main: black;
+  --text-bright: grey;
+  --focus: red;
+  --background: lightgrey;
+  --highlight: var(--text-bright);
+  --code: black;
+  --links: blue;
+  --form-text: blue;
+
+  --button-base: lightyellow;
+  --button-hover: yellow;
+  --button-disabled: grey;
+  --form-placeholder: green;
+  --selected: red;
+
+  --select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' height='63' width='117' fill='%23161f27'%3E%3Cpath d='M115 2c-1-2-4-2-5 0L59 53 7 2a4 4 0 00-5 5l54 54 2 2 3-2 54-54c2-1 2-4 0-5z'/%3E%3C/svg%3E");
+
+  --background-body: #202b38;
+  --background: #161f27;
+  --background-alt: #1a242f;
+  --selection-color: #1c76c5;
+  --text-main: #dbdbdb;
+  --text-bright: #fff;
+  --text-muted: #a9b1ba;
+  --links: #41adff;
+  --focus: #0096bfab;
+  --border: #526980;
+  --code: #ffbe85;
+  --animation-duration: 0.1s;
+  --button-base: #0c151c;
+  --button-hover: #040a0f;
+  --scrollbar-thumb: var(--button-hover);
+  --scrollbar-thumb-hover: color-mod(var(--scrollbar-thumb) lightness(-30%));
+  --form-placeholder: #a9a9a9;
+  --form-text: #fff;
+  --variable: #d941e2;
+  --highlight: #efdb43;
+  --active: red;
+
+  --background-body: #fff;
+    --background: #efefef;
+    --background-alt: #f7f7f7;
+    --selection-color: #9e9e9e;
+    --text-main: #363636;
+    --text-bright: #000;
+    --text-muted: #70777f;
+    --links: #0076d1;
+    --focus: #0096bfab;
+    --border: #dbdbdb;
+    --code: #000;
+    --animation-duration: 0.1s;
+    --button-base: #d0cfcf;
+    --button-hover: #9b9b9b;
+    --scrollbar-thumb: color-mod(var(--button-hover) lightness(+6%));
+    --scrollbar-thumb-hover: var(--button-hover);
+    --form-placeholder: #949494;
+    --form-text: #1d1d1d;
+    --variable: #39a33c;
+    --highlight: #ff0;
+
+  --invalid: gray;
+/*   --invalid: hsl(10, 90%, 60%); */
+}
+
+body {
+  background-color: var(--background-body);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+button,
+input,
+textarea {
+  transition:
+    background-color var(--animation-duration) linear,
+    border-color var(--animation-duration) linear,
+    color var(--animation-duration) linear,
+    box-shadow var(--animation-duration) linear,
+    transform var(--animation-duration) ease;
+}
+
+h1,h2,h3,h4,h5,h6,strong {
+  color: var(--text-bright);
+}
+
+h1,h2,h3,h4,h5,h6,b,strong,th {
+  font-weight: 600;
+}
+
+blockquote,
+q {
+  border-left: 4px solid var(--focus);
+/*   margin-block: 1.5em; */
+  /* 不能指定 padding-block, 否則標題無法正確合併 */
+  padding-inline: 1em;
+/*   padding: 0.5em 1em; */
+  /* font-style: italic; */
+}
+
+/*
+blockquote > footer {
+  font-style: normal;
+  border: 0;
+}
+
+blockquote cite {
+  font-style: normal;
+} */
+
+
+mark {
+  background-color: var(--highlight);
+  color: #000;
+  border-radius: 2px;
+  padding-inline: 2px;
+}
+code,samp,time {
+  background: var(--background);
+  color: var(--code);
+  border-radius: 6px;
+  padding: 2.5px 5px;
+}
+pre > code {
+  line-height: 1.4;
+  padding: 10px;
+  display: block;
+  overflow-x: auto;
+}
+var {
+  color: var(--variable);
+  font-style: normal;
+  font-family: monospace;
+}
+
+kbd {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-main);
+  padding: 2px 4px 2px 4px;
+}
+
+/* 與 mark 接近 */
+.chip {
+  display: inline-grid;
+  grid: none / auto-flow;
+
+  min-width: 0;
+  font-size: 0.750em;
+  background: #efefef;
+  border-radius: 50rem;
+  padding: .35em .65em;
+/*     padding: 0px 0px 0px 5px; */
+  line-height: 1;
+  cursor: default;
+}
+
+
+a {
+  /* 去除下劃線 */
+  text-decoration: inherit;
+  color: var(--links);
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a > code,
+a > strong {
+  color: inherit;
+}
+
+
+::selection {
+  background-color: var(--selection-color);
+  color: var(--text-bright);
+}
+
+}
+
+@layer other {
+  /* .subtitle可以廣泛應用 */
+  .subtitle {
+
+  }
+}
+
+
+
+/* Form Element
+
+   form, button, select, textarea, input
+
+   label, fieldset, legend
+
+   invaild 外框會變警示色，並且可能出現tooltip提示
+   focus 背景會變深色，並且可能出現tooltip提示
+  
+   ## 額外的補助
+
+   .help 用來只是說明問字
+
+
+   ## There are 3 supported types for a button
+
+   submit ||  "submits the form when clicked (default)"
+   reset  ||  "resets the fields in the form when clicked"
+   button ||  "clickable, but without any event handler until one is assigned"
+
+
+   ## 複雜input範例
+
+  <div class="field">
+     <label class="label">Email</label>
+     <div class="control has-icons-left has-icons-right">
+       <input class="input is-danger" type="email" placeholder="Email input" value="hello@">
+       <span class="icon is-small is-left">
+         <i class="fas fa-envelope"></i>
+       </span>
+       <span class="icon is-small is-right">
+         <i class="fas fa-exclamation-triangle"></i>
+       </span>
+     </div>
+     <p class="help is-danger">This email is invalid</p>
+  </div>
+
+  <div class="field has-addons">
+    <div class="control">
+      <input class="input" type="text" placeholder="Find a repository">
+    </div>
+    <div class="control">
+      <button class="button is-info">
+        Search
+      </button>
+    </div>
+  </div>
+
+*/
+
+@layer basic-form {
+
+
+.i,
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"]
+input[type="file"]::file-selector-button
+{
+  /* button-like 預設是 block, 如果希望弄成橫排, 則要包上 .btn-group */
+/*   display: flex; */
+  display: grid;
+  grid: none / auto-flow max-content;
+  place-content: normal center;
+  place-items: center normal;
+  text-align: center;
+
+  gap: 1ch;
+/*   padding-block: var(--btn-padding-block); */
+/*   padding-inline: var(--btn-padding-inline); */
+
+  user-select: none;
+  /* it prevents text highlighting the button text. This is mostly noticeable on touch devices when a button is tapped and held and the operating system highlights the text of the button.  */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+
+}
+
+:where(.i, button, input) > :where(svg.icon, [data-icon]) {
+  block-size: 1.5em;
+  aspect-ratio: 1;
+/*   color: var(--text-main); */
+}
+:where(.i, button, input):has(> :where(svg.icon, [data-icon])) {
+  vertical-align: bottom;
+}
+
+:where(input[type="file"]) {
+  inline-size: 100%;
+  max-inline-size: max-content;
+  background-color: var(--_input-well);
+}
+:where(input[type="file"])::file-selector-button {
+  margin-inline-end: var(--btn-padding-inline);
+}
+
+
+.i,
+button,
+select,
+input[type='submit'],
+input[type='reset'],
+input[type='button'],
+input[type='checkbox'],
+input[type='range'],
+input[type='radio'],
+input[type="file"]::file-selector-button {
+  cursor: pointer;
+  touch-action: manipulation;
+  /* make clicks not need to wait and observe a potential double click,
+     making the buttons feel faster: */
+}
+
+
+select,
+textarea,
+input {
+  display: block;
+}
+
+[type='checkbox'],
+[type='radio'] {
+  display: initial;
+}
+
+
+/* TODO: 制定統一的margin, pedding */
+.i,
+button,
+select,
+textarea,
+input,
+input[type="file"]::file-selector-button {
+  color: var(--form-text);
+  background-color: var(--background);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  outline: none;
+}
+
+input[type="file"] {
+  background-color: var(--button-base);
+  padding: 0.25ch;
+}
+input[type="file"]::file-selector-button {
+  box-sizing: border-box;
+  margin: 0px;
+  margin-inline-end: 10px;
+  border: 2px solid var(--border);
+}
+
+.i,
+button,
+input[type='submit'],
+input[type='reset'],
+input[type='button'] {
+  background-color: var(--button-base);
+  padding-inline: 30px;
+}
+
+
+
+input[type='checkbox'],
+input[type='radio'] {
+  height: 1em;
+  width: 1em;
+}
+
+input[type='radio'] {
+  border-radius: 100%;
+}
+
+/* input {
+  vertical-align: top;
+} */
+
+label {
+  vertical-align: middle;
+  margin-bottom: 4px;
+  display: inline-block;
+}
+
+button,
+select,
+textarea,
+input:not([type='checkbox']):not([type='radio']),
+input[type='range'],
+input[type='button'],
+input[type="file"]::file-selector-button
+{
+/*   -webkit-appearance: none; */
+  appearance: none;
+}
+
+/* textarea {
+  margin-right: 0;
+  resize: vertical;
+} */
+
+textarea:not([cols]) {
+  width: 100%;
+}
+
+textarea:not([rows]) {
+  min-height: 40px;
+  height: 140px;
+}
+
+
+/* select-arrow */
+select {
+  background: var(--background)
+              var(--select-arrow) calc(100% - 12px) 50% / 12px no-repeat;
+  padding-right: 35px;
+}
+
+select[multiple] {
+  background-image: none;
+  padding-right: 10px;
+  overflow-y: auto;
+}
+
+fieldset {
+  border: 1px var(--focus) solid;
+  border-radius: 6px;
+  margin: 0;
+  margin-bottom: 12px;
+  padding: 10px;
+}
+
+legend {
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+
+
+
+/* misc */
+
+/*
+dialog {
+  background-color: var(--background-alt);
+  color: var(--text-main);
+  border: none;
+  border-radius: 6px;
+  border-color: var(--border);
+  padding: 10px 30px;
+}
+
+dialog > header:first-child {
+  background-color: var(--background);
+  border-radius: 6px 6px 0 0;
+  margin: -10px -30px 10px;
+  padding: 10px;
+  text-align: center;
+}
+*/
+
+dialog::backdrop {
+  background: #0000009c;
+  backdrop-filter: blur(4px);
+}
+
+footer {
+  color: var(--text-muted);
+}
+
+body > footer {
+  margin-top: 40px;
+}
+
+}
+
+
+
+
+
+@layer control {
+
+
+:where(
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"]
+):hover {
+  background: var(--button-hover);
+}
+
+:where(select, input):invalid {
+  color: var(--invalid);
+}
+
+:where(button, input):where(:not(:active)):focus-visible,
+:where(select, textarea):focus {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* TODO: use non-translate style */
+:where(
+button,
+input[type='checkbox'],
+input[type='radio'],
+input[type='submit'],
+input[type='reset'],
+input[type='button'],
+input[type='range']):active {
+  color: orange;
+/*   transform: translateY(2px); */
+}
+
+:where(button, select, textarea, input):disabled
+{
+  cursor: not-allowed;
+/*   opacity: 0.5; */
+  color: var(--button-disabled);
+}
+
+::placeholder {
+  color: var(--form-placeholder);
+}
+
+
+[aria-selected=true] {
+  color: var(--selected);
+  /* 如果元件重疊，讓被選擇的浮上 */
+  /*     z-index: 1; */
+}
+
+[hidden],
+[aria-hidden=true] {
+  display: none;
+}
+
+/* TODO: 高亮設定 */
+
+
+*:focus,
+*:focus-visible {
+  box-shadow: none;
+  outline: none;
+  color: var(--focus) !important;
+}
+*:focus-within {
+
+}
+:not(body):active {
+  color: var(--active) !important;
+}
+
+/* body {
+  scrollbar-gutter: stable;
+} */
+
+}
+
+
+
+@layer table {
+
+.table [role="table"] {
+    display: flex;
+    flex-direction: column;
+}
+.table [role="table"] > * {
+  box-sizing: border-box;
+}
+.table [data-menu-header] {
+    overflow-x: hidden;
+}
+.table [data-menu] {
+    box-sizing: content-box;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+.table [data-menu],
+.table [data-menu-header] {
+    display: grid;
+}
+.table [data-menu] :where(div[tabindex], [data-subtree], [data-content]),
+.table :where([data-menu], [data-subtree]) > div[data-aggregates],
+.table [data-menu-header] > div {
+    grid-column: 1/-1;
+}
+.table [data-menu] :where(div[tabindex], [data-subtree]),
+.table [data-menu-header] > div {
+    display: grid;
+    grid-template-columns: subgrid;
+}
+/* .table [data-menu] :where(div[tabindex], [data-subtree]) > *,
+.table [data-menu-header] > div > * {
+  &[aria-colspan=1] { grid-column: span 1; }
+  &[aria-colspan=2] { grid-column: span 2; }
+  &[aria-colspan=3] { grid-column: span 3; }
+  &[aria-colspan=4] { grid-column: span 4; }
+} */
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="1"]
+  { grid-column: span 1; }
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="2"]
+  { grid-column: span 2; }
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="3"]
+  { grid-column: span 3; }
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="4"]
+  { grid-column: span 4; }
+
+.table :where([data-content], [data-subtree]) {
+    margin-left: 20px;
+}
+
+.table [aria-setsize][aria-selected="true"] {
+    background-color: lightpink;
+}
+
+.table [tabindex] {
+  --selection: 1;
+}
+
+.table [aria-expanded] {
+  --selection: aria-expanded;
+  --toggle-controls: +;
+  --allow-deselect: true;
+}
+.table [aria-hidden="true"] {
+  display: none;
+}
+
+/* .table [aria-expanded="false"] + [data-content],
+.table [aria-expanded="false"] + [data-subtree] {
+    display: none;
+} */
+
+.table [role="rowheader"] {
+  font-weight: bold;
+}
+.table [role="columnheader"] {
+  color: red;
+}
+
+}
+
+
+
+
+/*
+
+TODO: not use attr
+
+img,iframe,canvas,svg,video {
+  max-height: 690px;
+  object-fit: scale-down;
+  border: none;
+  width: attr(width, initial);
+  height: attr(height, initial);
+}
+
+:is(img,iframe,canvas,svg,video):where([width], [height], [data-aspect-ratio]) {
+  aspect-ratio: attr(data-aspect-ratio, auto);
+  object-fit: cover;
+}
+*/
+
+/*
+
+figure是比想像中還要重要的元素
+figure雖然通常拿來包含Embedded content:
+    <audio>
+    <canvas>
+    <embed>
+    <iframe>
+    <img>
+    <math>
+    <object>
+    <picture>
+    <svg>
+    <video>
+但其實，figure內可以包含任何流元素
+通常 <figure> 是文件主流中引用的圖片、插圖、圖表、程式碼片段等，
+但可以移動到文件的其他部分或附錄，而不影響主流。
+
+figure很適合拿來做.side .example
+
+TODO: 處理figcaption
+
+
+*/
+
+@layer other {
+
+figure {
+  /* overflow-x: scroll; */
+  /* overflow-y: auto; */
+  overflow-x: auto;
+}
+figure > :where(img,iframe,canvas,svg,video) {
+  width: initial;
+  max-width: initial;
+  max-height: initial;
+  object-fit: none;
+}
+
+/* <code> etc. */
+figure > :not(img,iframe,canvas,svg,video,figcaption) {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+img[loading="lazy"] {
+  display: grid;
+}
+img[loading="lazy"]::before {
+  position: absolute;
+  display: block;
+  content: attr(alt) "";
+  background: gray;
+  z-index: -1;
+}
+
+p[data-max-line] {
+  display: -webkit-box;
+/*   -webkit-line-clamp: attr(data-max-line); */
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+}
+

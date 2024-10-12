@@ -1,0 +1,419 @@
+
+:root {
+  color-scheme: light;
+  &:has(input[name="color-scheme"][value="dark"]:checked) {
+    color-scheme: dark;
+  }
+}
+
+:root {
+  --surface-0: oklch(96% 0.005 300);
+  --surface-1: oklch(100% 0 0);
+  --surface-2: oklch(99% 0 0 / 85%);
+  --text-primary: oklch(0% 0 0);
+  --text-secondary: oklch(54% 0 0);
+  --accent: oklch(57% 0.18 286);
+  --danger: oklch(59% 0.23 7);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-0: oklch(0% 0 0);
+    --surface-1: oklch(29% 0.01 300);
+    --surface-2: oklch(29% 0 0 / 85%);
+    --text-primary: oklch(100% 0 0);
+  }
+}
+
+body {
+  color: CanvasText;
+  background-color: Canvas;
+}
+
+
+
+.table [role="table"] {
+    display: flex;
+    flex-direction: column;
+}
+.table [role="table"] > * {
+  box-sizing: border-box;
+}
+.table [data-menu-header] {
+    overflow-x: hidden;
+}
+.table [data-menu] {
+    box-sizing: content-box;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+.table [data-menu],
+.table [data-menu-header] {
+    display: grid;
+}
+.table [data-menu] :where(div[tabindex], [data-subtree], [data-content]),
+.table :where([data-menu], [data-subtree]) > div[data-aggregates],
+.table [data-menu-header] > div {
+    grid-column: 1/-1;
+}
+.table [data-menu] :where(div[tabindex], [data-subtree]),
+.table [data-menu-header] > div {
+    display: grid;
+    grid-template-columns: subgrid;
+}
+/* .table [data-menu] :where(div[tabindex], [data-subtree]) > *,
+.table [data-menu-header] > div > * {
+  &[aria-colspan=1] { grid-column: span 1; }
+  &[aria-colspan=2] { grid-column: span 2; }
+  &[aria-colspan=3] { grid-column: span 3; }
+  &[aria-colspan=4] { grid-column: span 4; }
+} */
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="1"]
+  { grid-column: span 1; }
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="2"]
+  { grid-column: span 2; }
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="3"]
+  { grid-column: span 3; }
+.table :where([data-menu], [data-subtree], [data-menu-header]) > div > [aria-colspan="4"]
+  { grid-column: span 4; }
+
+.table :where([data-content], [data-subtree]) {
+    margin-left: 20px;
+}
+
+.table [aria-setsize][aria-selected="true"] {
+    background-color: red;
+}
+
+.table [aria-expanded="false"] + [data-content],
+.table [aria-expanded="false"] + [data-subtree] {
+    display: none;
+}
+
+.table [role="rowheader"] {
+  font-weight: bold;
+}
+.table [role="columnheader"] {
+  color: red;
+}
+
+
+
+
+
+
+
+
+
+
+
+@layer reset {
+html.reset {
+  body, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6,
+  pre, code, form, fieldset, legend, input, textarea,
+  p, blockquote, th, td, hr, button, article, aside, details,
+  figcaption, figure, footer, header, menu, nav, section {
+      margin: 0;
+      padding: 0;
+  }
+
+  /* https://css-tricks.com/box-sizing/ */
+  html {
+      /* box-sizing: border-box; */
+      /*-webkit-text-size-adjust: 100%;*/
+      /*-ms-text-size-adjust: 100%;*/
+  }
+
+  /* *, *:before, *:after {
+      box-sizing: inherit;
+  } */
+
+  /* 去掉各Table cell 的边距并让其边重合 */
+  table {
+      border-collapse: collapse;
+      border-spacing: 0;
+  }
+
+  /* 去除默认边框 */
+  fieldset, img {
+      border: 0;
+  }
+
+
+  p {
+    margin: 24px 0 24px 0;
+  }
+
+  h1, h2, h3 {
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  h1 {
+    font-size: 52px;
+    line-height: 62px;
+  }
+
+  h2 {
+    margin-top: 60px;
+    font-size: 22px;
+    line-height: 27px;
+  }
+
+  h3 {
+    margin: 12px auto 0 auto;
+    font-size: 17px;
+    line-height: 27px;
+    color: #95fcfc;
+  }
+
+  pr, code {
+    font-family: "Droid Sans Mono", monospace;
+    font-size: 17px;
+  }
+
+  pre {
+    display: block;
+    line-height: 15px;
+    margin: 0 auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 13px;
+  }
+}
+}
+
+
+
+
+@layer content {
+html.reset-content {
+  /* 段落的頭尾還是需要對齊 */
+  p { text-align: justify; text-justify: ideographic;}
+
+  /* 全形空白（U+3000, ideographic space）來取代text-indent */
+  p { text-indent: 2em; }
+
+  p { word-break: break-all; }
+
+
+  /*:link,:visited,:hover,:active 這4個偽類大家都不陌生，4個偽類要按照LvHa這個愛恨原則來排。
+  /* 另外還有:focus,:disabled*/
+
+
+  html { line-height: 1.15; }
+  html {
+    line-height: 1.5;
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 20px;
+  }
+  body { margin: 0; }
+  hr { box-sizing: content-box; height: 0; }
+  pre,code,kbd,samp { font-family: monospace, monospace; font-size: 1em; }
+  b,strong { font-weight: bolder; }
+  small { font-size: 80%; }
+  sub,sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+  sub { bottom: -0.25em; }
+  sup { top: -0.5em; }
+  /*blockquote, q { quotes: none; }*/
+
+  ol,ul { padding-left: 2em; }
+  figure,blockquote  { margin-left: 2em; margin-right: 2em; }
+  address { font-style: inherit; }
+  a { text-decoration: inherit }
+  pre { overflow: auto; white-space: pre; word-wrap: normal; }
+
+  dfn:lang(zh),dfn:lang(ja) { font-weight: bolder; font-style: inherit; }
+  cite:lang(zh),cite:lang(ja) { /*font-style: inherit;*/ }
+
+  dfn:lang(zh) { -webkit-text-emphasis: open dot; text-emphasis: open dot; }
+  dfn:lang(ja) { -webkit-text-emphasis: open sesame; text-emphasis: open sesame; }
+
+
+  /* Alternative voices and variables */
+  i,var {}
+  u,ins { padding-bottom: 0.05em; border-bottom: 1px solid; text-decoration: none; }
+
+  /*  Annotations, inaccurate text, insertion and deletion 避免橫線連在一起 */
+  :where(u,ins) + :where(u,ins) { margin-left: .125em }
+  :where(s,del) + :where(u,del) { margin-left: .125em }
+
+
+  q { quotes: '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019'; }
+  q:lang(zh) { quotes: '\300c' '\300d' '\300e' '\300f' '\300c' '\300d' '\300e' '\300f' '\300c' '\300d' '\300e' '\300f'; }
+  q:lang(zh-CN),q:lang(en) { quotes: '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019'; }
+  q:lang(en-GB) { quotes: '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d' '\2018' '\2019' '\201c' '\201d'; }
+  q:before { content: open-quote; }
+  q:after { content: close-quote; }
+  q:lang(ja):before, q:lang(ja):after { content: none; }
+
+
+  :where(h1,h2,h3,h4,h5,h6) + :where(blockquote,p,ol,ul,h6,section >
+                                     :where(h6,p,ol,ul,h6):first-child),
+  :where(h1,h2,h3,h4,h5) + :where(h5,section>h5:first-child),
+  :where(h1,h2,h3,h4) + :where(h4,section>h4:first-child),
+  :where(h1,h2,h3) + :where(h3,section>h3:first-child),
+  :where(h1,h2) + :where(h2,section>h2:first-child) {
+    margin-top: -1em;
+  }
+
+  blockquote figure { margin: 0; }
+
+}
+}
+
+
+
+
+
+
+
+
+
+@media print {
+    h1, h2, h3, h4, h5, h6, img {
+        page-break-after:avoid;
+        page-break-inside:avoid
+    }
+    h1+p, h2+p, h3+p {
+        page-break-before: avoid;
+    }
+    a, table, figure {
+        page-break-inside:avoid
+    }
+    ul, ol, dl {
+        page-break-before:avoid;
+    }
+    header nav, video, audio, object, embed {
+      display: none;
+    }
+
+    body{
+        /*width: 100%;*/
+        /*margin: 0;*/
+        /*float: none;*/
+        line-height: 1.5;
+        font-size: 12pt;
+    }
+    img {
+        max-width: 100%;
+    }
+
+    article a:link, article a:visited, article a {
+      text-decoration: underline;
+      /*text-align: left;*/
+      word-wrap: break-word; /*避免網址過長超出頁面*/
+    }
+
+    article :where(a[href^="http://"], a[href^="https://"]):after {
+      content: " (" attr(href) ") ";
+    }
+    thead{
+      display: table-header-group; /* 表格即使分頁也會顯示表頭 */
+    }
+}
+
+@media not (prefers-reduced-motion) {
+    :root {
+        /*--animation-reduced-to: initial;*/
+        --animation-reduced-to: 0ms;
+    }
+}
+
+@media not (prefers-reduced-motion) {
+  .animation {
+    animation-name: dissolve;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .contrast {
+    outline: 2px solid black;
+  }
+}
+
+
+@layer typography {
+
+  .null {
+
+  @font-face {
+    font-family: MyCustomFont;
+    src: local(Heiti TC), local("微軟正黑體");
+    /* no unicode-range; default to all characters */
+  }
+
+  /* Latin characters 專用 */
+  @font-face {
+    font-family: MyCustomFont; /* 同樣的 font-family */
+    unicode-range: U+00-024F;  /* Latin, Latin1 Sup., Ext-A, Ext-B */
+    src: local(Helvetica),     /* OS X preferred */
+         local(Arial);         /* Other OS */
+  }
+
+  /* 注音符號專用 */
+  @font-face {
+    font-family: MyCustomFont;      /* 同樣的 font-family */
+    unicode-range: U+3100-312F;     /* Bopomofo */
+    src: local(LiHei Pro),          /* OS X */
+         local("微軟正黑體"); /* Windows Vista+ */
+  }
+
+  /* 日文假名專用 */
+  @font-face {
+    font-family: MyCustomFont;            /* 同樣的 font-family */
+    unicode-range: U+3040-30FF;           /* Hiragana, Katakana */
+    src: local(Hiragino Kaku Gothic Pro), /* OS X */
+         local(Meiryo);                   /* Windows Vista+ */
+  }
+
+  body {
+    font-family: MyCustomFont, sans-serif;
+  }
+
+  /* https://jacobruan.com/the-font-selection-and-development-guide-in-chinese-web-pages/ */
+
+  /* 知乎 */
+  .body {
+      font-family: -apple-system,BlinkMacSystemFont,Helvetica Neue,PingFang SC,Microsoft YaHei,Source Han Sans SC,Noto Sans CJK SC,WenQuanYi Micro Hei,sans-serif;
+      font-size: 15px;
+      color: #121212;
+  }
+
+  /* 簡書 */
+  .body {
+      line-height: 1.42857;
+      color: #404040;
+      background-color: #fff;
+      font-family: -apple-system,BlinkMacSystemFont,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Helvetica,Arial,sans-serif;
+      font-feature-settings: "tnum";
+      font-variant: tabular-nums;
+  }
+
+  /* 霹靂霹靂 */
+  .body {
+      font-family: PingFang SC,HarmonyOS_Regular,Helvetica Neue,Microsoft YaHei,sans-serif!important;
+      font-weight: 400;
+      overflow-x: auto;
+  }
+
+  /* 蘋果 */
+  .body {
+      font-size: 17px;
+      line-height: 1.5294717647;
+      font-weight: 400;
+      letter-spacing: -0.021em;
+      font-family: "SF Pro Text","SF Pro Icons","Helvetica Neue","Helvetica","Arial",sans-serif;
+      background-color: white;
+      color: #333;
+      font-style: normal;
+  }
+
+}
+
+}
+

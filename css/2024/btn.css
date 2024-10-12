@@ -1,0 +1,813 @@
+/*
+
+  TODO: 整合badge與chip
+
+  block是帶有上下margin的元素，而且左右延伸，類似<p> <table>
+  box是帶有內部padding的元素，類似<blockquote> <form>
+
+  (O)addon概念，改用segmented取代
+  (O)attach概念 附加的簡單圖示
+  (O)float概念 附加的內容，可能與attach重疊
+  badge/chip group
+  badge/chip as selection
+  badge/chip icon
+  badge/chip 掛在d元素的邊邊角角
+
+
+  ## TODO: 對於list的幾種表現方式
+  ( )直接展開ul
+  ( )換頁ul
+  浮動式(fixedpos)ul，類似combobox (list in window)
+
+
+  ## TODO: 折疊
+
+  [aria-expanded] 為可折疊元素，預設為點擊自身來觸發折疊
+  [aria-expanded="false"]
+  控制元素鎖定了一個單一的可折疊元素時，添加[aria-controls=ID]
+  [data-collapse-self] 用來把父元素關閉
+  [aria-label="Close"] 或許也可以用來把父元素關閉
+
+  ( )如同summary一樣的下拉式元件
+  ( )向下箭頭
+  ( )向右箭頭
+  ( )自動浮出的按鈕選單
+
+
+  Ｂ元素通常會有padding-inline，但是
+  singleton 沒有padding-inline
+  circle square 更是只允許 aspect-ratio: 1
+
+  Ｂ元素有四種內部排列
+
+  [normal]
+    (O)基本排列為 <attach-before> / <contents> / <attach-after>
+    (O)基礎的 contents: <icon> / <texts> / <badge>
+    (O)badge         掛在箭頭之前 <icon> / <text&chip> / <badge> / <attach-after>
+    (O)badge-on-icon 掛在圖示右上 <icon> <badge> / <text> / <attach-after>
+    (O)badge-on-text 掛在文字右上 <icon> / <text> <badge> / <attach-after>
+  .append icon在contents尾端
+    (O)badge 掛在最前面 <badge> / <text> / <icon> / <attach-after>
+    (O)badge-on-icon 掛在圖示右上 <text> / <icon> <badge> / <attach-after>
+    (O)badge-on-text 掛在文字右上 <text> <badge> / <icon> / <attach-after>
+  .circle .singleton 沒有texts也不能有attach
+    (O)內部順序只能是 <icon> <badge>
+  .stacked icon漂浮在texts上方
+
+
+  Ｂ元素容器有六種外部排列
+  segmented 是壓縮的意思，除了主元素以外會以最小型態出現，而不會再隨著父容器變化
+  expanded 是擴張的意思，元素會盡量塞滿空間，如果不夠則換行
+  stacked 是方形元素，因此，他的容器不再分垂直或水平排列，而是依序塞滿空間。
+
+  (O) group其中一個功能重要是壓縮文字，也就是處理overflow與wrap
+  (O) group也可以讓文字能夠多行，這必須用<br>手動指示換行
+  fieldset也可以用.group表達
+  (O).group.horizontal
+  (O).group.horizontal.segmented (has-addons)
+  (X).group.horizontal.stacked
+  (O).group.vertical
+  (X).group.vertical.segmented
+  (X).group.vertical.stacked
+  (X).group.grid.stacked
+  .group.stacked
+  .expanded
+
+  # TODO: 獨立group
+
+  .menu-like 用來表達下拉式選單的樣式，直式，無邊界
+  .btn-group 則是獨立按鈕
+  .btn-group.segmented 是相黏按鈕
+  .auto-popup 滑鼠移過去會自動展開
+  [aria-expanded="false"] 按下去會顯示其他元件，包含tab, modal, menu-lile
+  [aria-haspopup="true"] 按下去會顯示彈出menu-lile選單
+  [data-dropdown] 是下拉式選單，選中之後會關閉選單
+
+
+  (?)group可以堆疊，這會讓group之間出現分隔線
+  (O)如果要維持group grid，也可以使用<hr>加入分隔線
+  (O)group可以嵌套，可以做出子選單
+  (O)預設為完全展示帶有縮排的子選單
+  ()foldable(collapse) 可摺疊的子選單
+  group可滾動的情形，子選單不能彈出(但可伸展，可換頁)
+  (O)group不可滾動的情形，子選單可以彈出
+  (?)有子選單aria-hidden的情形，自動讓出attach-after
+  toolbar是更高層級的group of group
+
+
+  按鈕有六種外觀樣式 dress-X
+  [normal]
+  .flat
+  .outlined
+  .tonal
+  .text
+  .elevated
+  .static 與disable類似，不能互動
+  .borderless 與flat類似，但並不是一種style而是單純消除編框，用來嵌入到其他元件
+
+
+  按鈕有九種外觀設定 size-X narrow-X
+  [normal]
+  .s .xs 較小
+  .l .xl 較大
+  .n .xn 較窄
+  .m .xm 較寬
+
+  另外有幾種互動設定 interact-X
+
+  (O) 以上四種同類型會覆蓋，不同類型會疊加。
+  (O) Y-X會傳給子代，但是會被.c,.d所阻擋
+  (X) 再加上 Y-X-children
+  (O) Y-X-descendant 可以設定所有子代的類型
+  ( ) Y-X-self 只設定自己自身，不會波及任何底下元素
+
+
+
+  五種補助型內建icon，這些內建icon可以浮貼在按鈕前後各一種
+  (O)delete
+  (O)dot
+  (O)more
+  (O)checked
+  (O)arrow
+  (O)loading
+
+*/
+
+/* @property --selection {
+  syntax: "*";
+  inherits: true;
+} */
+
+@layer btn {
+
+:root {
+  --width-attach-before: 0em;
+  --width-icon-before: 0px;
+  --width-icon-after: 0px;
+  --width-badge: 0em;
+  --width-attach-after: 0em;
+
+  --button-min-width: auto;
+  --button-container-height: 40px;
+  --button-border-radius: calc(var(--button-container-height) / 2);
+  --button-side-padding: 24px;
+}
+
+svg.icon {
+  fill: currentColor;
+}
+
+
+:is(.b) {
+  --text-width: max-content;
+
+  display: grid;
+  grid: [attach-before icon-before text badge icon-after attach-after] auto /
+    var(--button-side-padding, 0px)
+    [attach-before] var(--width-attach-before)
+    [icon-before] var(--width-icon-before)
+    calc(var(--width-icon-before, 0px) / 4)
+    [text] var(--text-width)
+    [badge] var(--width-badge)
+    calc(var(--width-icon-after, 0px) / 4)
+    [icon-after] var(--width-icon-after)
+    [attach-after] var(--width-attach-after)
+    var(--button-side-padding, 0px)
+    ;
+  gap: 0;
+  min-width: var(--button-min-width, auto);
+  height: var(--button-container-height, auto);
+  padding: 0;
+  border-radius: var(--button-border-radius, 0px);
+
+/*   line-height: calc(var(--button-container-height) - 0px); */
+
+  /* simple reset */
+  list-style: none;
+  text-decoration: none;
+  border: none;
+/*   background: none; */
+}
+
+:is(.b).stacked {
+  grid:
+    ". attach-before icon-before icon-before attach-after ." max-content
+    ". attach-before text badge attach-after ." max-content
+    /
+    var(--button-side-padding, 0px)
+    var(--width-attach-before)
+    var(--text-width)
+    var(--width-badge)
+    var(--width-attach-after)
+    var(--button-side-padding, 0px)
+    ;
+}
+
+:is(.b):has(> :is(input, select)) {
+  --text-width: minmax(max-content, 1fr);
+  background-color: var(--background);
+}
+:is(.b):has(> :is(input)):hover {
+  border-color: lightgreen;
+}
+:is(.b):has(> :is(input)):focus-within {
+  border-color: red;
+}
+:is(.b):has(> :is(input)[disabled]) {
+
+}
+
+
+:is(.b) > :is(input, select):focus-visible,
+:is(.b) > :is(input, select):focus-within {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+:is(.b) > :is(input, select) {
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  place-self: stretch stretch;
+}
+:is(.b) > input:focus {
+  margin-block: 4px;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: lightgrey;
+}
+select {
+  min-width: 48px;
+}
+:is(.b) > select {
+  padding-inline-start: 8px;
+  place-self: center stretch;
+}
+
+
+label.b > span:first-of-type,
+:has(.label).b > .label {
+  --label-offset: 0px;
+
+  color: darkgrey;
+  background-color: var(--background);
+  width: min-content;
+  font-size: 0.825em;
+  margin-block-start: calc(var(--button-container-height) * -1 + var(--label-offset));
+  padding-inline: 4px;
+}
+
+menu {
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+menu:has(> .b, > ul > .b),
+menu.has-b {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 6px;
+  place-content: start stretch;
+}
+
+menu:has(> .b, > ul > .b) ul,
+menu.has-b ul {
+  display: contents;
+}
+
+menu.vertical:has(> .b, > ul > .b),
+menu.vertical.has-b {
+  --width-attach-before: 0px;
+  --width-attach-after: 0px;
+  --width-icon-before: 0px;
+  --width-icon-after: 0px;
+  --width-badge: 0px;
+
+  display: grid;
+  grid: [attach-before icon-before text badge icon-after attach-after] auto /
+    var(--button-side-padding, 0px)
+    [attach-before] var(--width-attach-before)
+    [icon-before] var(--width-icon-before)
+    calc(var(--width-icon-before, 0px) / 4)
+    [text] minmax(0px, 1fr)
+    [badge] var(--width-badge)
+    calc(var(--width-icon-after, 0px) / 4)
+    [icon-after] var(--width-icon-after)
+    [attach-after] var(--width-attach-after)
+    var(--button-side-padding, 0px)
+    ;
+  gap: 6px 0px;
+  place-content: start stretch;
+  width: fit-content;
+}
+
+menu.vertical:not(.append).has-icon:not(.badge-on-icon, .badge-on-text),
+menu.vertical:not(.append):has(> .b:not(.badge-on-icon, .badge-on-text) > .icon,
+                               > ul > .b:not(.badge-on-icon, .badge-on-text) > .icon),
+:is(.b):not(.append):has(> .icon) {
+  --width-icon-before: 24px;
+}
+menu.vertical.append.has-icon:not(.badge-on-icon, .badge-on-text),
+menu.vertical.append:has(> .b:not(.badge-on-icon, .badge-on-text) > .icon,
+                         > ul > .b:not(.badge-on-icon, .badge-on-text) > .icon),
+:is(.b).append:has(> .icon),
+:is(.b):has(> .icon.append) {
+  --width-icon-after: 24px;
+}
+:is(.b):where(.has-attach-before, .close-before, .checked-before, .more-before, .dot-before, .loading-before, .arrow-before),
+menu.vertical.has-attach-before,
+menu.vertical:has(> .b:where(.has-attach-before, .close-before, .checked-before, .more-before, .dot-before, .loading-before, .arrow-before),
+                  > ul > .b:where(.has-attach-before, .close-before, .checked-before, .more-before, .dot-before, .loading-before, .arrow-before)) {
+  --width-attach-before: 24px;
+}
+:is(.b):where(.has-attach-after, .close-after, .checked-after, .more-after, .dot-after, .loading-after, .arrow-after),
+menu.vertical.has-attach-after,
+menu.vertical:has(> .b:where(.has-attach-after, .close-after, .checked-after, .more-after, .dot-after, .loading-after, .arrow-after),
+                  > ul > .b:where(.has-attach-after, .close-after, .checked-after, .more-after, .dot-after, .loading-after, .arrow-after)) {
+  --width-attach-after: 24px;
+}
+menu.vertical.has-badge,
+menu.vertical:has(> .b > .badge,
+                  > ul > .b > .badge),
+:is(.b):not(.badge-on-icon, .badge-on-text):has(.badge) {
+  --width-badge: minmax(1em, min-content);
+}
+
+
+menu > .b,
+menu > ul > .b {
+  margin: 0;
+}
+
+menu.expanded > .b,
+menu.expanded > ul > .b {
+  flex-grow: 1;
+}
+
+menu > .b.expanded,
+menu > ul > .b.expanded {
+  flex-grow: 1;
+}
+
+
+/* vertical sub-menu */
+
+menu.vertical > * {
+  grid-area: auto / 1 / auto / -1;
+}
+menu.vertical > .b,
+menu.vertical > ul > .b {
+  grid: [attach-before icon-before text badge icon-after attach-after] auto / subgrid;
+  grid-area: auto / 1 / auto / -1;
+  /* TODO why need this? */
+  border-radius: 0;
+}
+
+menu.vertical > .b:has(> menu),
+menu.vertical > ul > .b:has(> menu) {
+  grid: [attach-before icon-before text badge icon-after attach-after]
+    var(--button-container-height, auto) auto / subgrid;
+  grid-area: auto / 1 / span 2 / -1;
+  height: auto;
+}
+
+menu.vertical menu.vertical.subgrid {
+  grid: auto / subgrid;
+}
+
+menu.vertical > .b > menu,
+menu.vertical > ul > .b > menu {
+  background-color: var(--background);
+/*   border-width: 1px; */
+  grid-area: 2 / text / span 1 / -1;
+  margin-inline-end: 0;
+}
+
+menu.vertical > hr {
+  grid-area: auto / 1 / auto / -1;
+}
+
+
+}
+
+/* auto-popup */
+
+@layer behavior {
+
+  .auto-popup {
+    position: absolute;
+  /*   z-index: 100; */
+    /* 用來蓋掉 z-index:0 的其他不相關的 stack-content */
+    z-index: 1;
+    place-self: unset;
+    place-self: start center;
+    grid-area: 1 / 1 / -1 / -1;
+  }
+
+
+  /* TODO: 有可能跟按鈕沒關係 */
+  .auto-popup.popup-up {
+    bottom: 100%;
+  }
+  .auto-popup.popup-bottom {
+    top: 100%;
+  }
+  .auto-popup.popup-right {
+    left: 100%;
+    /*     top: calc(var(--button-container-height, 0px) * -1); */
+  }
+  .auto-popup.popup-left {
+    right: 100%;
+    /*     top: calc(var(--button-container-height, 0px) * -1); */
+  }
+
+  :has(> .auto-popup) {
+    position: relative;
+  }
+}
+
+@layer control {
+  :has(> .auto-popup):not(:hover, :focus) > .auto-popup {
+    display: none;
+  }
+  [aria-modal="true"] {
+    --collapse-on-esc: true
+  }
+}
+
+
+
+
+
+
+
+@layer btn {
+
+menu.scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+
+/* B-element */
+
+:is(.b) > *,
+:is(.b)::before,
+:is(.b)::after {
+  text-align: center;
+  place-self: center stretch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* (X) 好像很必要, 又好像很危險, 為了 overflow 與 text-overflow 可以發動效果 */
+  /* width: 100%; */
+}
+
+:is(.b)::before,
+:is(.b)::after {
+  margin-inline-start: 0px;
+  place-self: center center;
+}
+
+menu > .b > *,
+menu > ul > .b > * {
+  text-align: initial;
+}
+
+:is(.b) > * {
+  grid-area: text;
+}
+:is(.b) > .badge {
+  grid-area: badge;
+  place-self: center end;
+}
+:is(.b) > .icon {
+  grid-area: icon-before;
+}
+:is(.b).badge-on-icon > .badge {
+  grid-area: icon-before;
+}
+:is(.b).append > .icon,
+:is(.b) > .icon.append {
+  grid-area: icon-after;
+}
+:is(.b).append.badge-on-icon > .badge {
+  grid-area: icon-after;
+}
+:is(.b).badge-on-text > .badge {
+  grid-area: text;
+}
+:is(.b)::before {
+  grid-area: attach-before;
+}
+:is(.b)::after {
+  grid-area: attach-after;
+}
+:is(.b) > .float-after {
+  grid-area: auto / badge / auto / -1;
+/*   justify-self: end; */
+  text-align: end;
+}
+:is(.b) > .float-before {
+  grid-area: 1 / 1 / auto / text;
+/*   justify-self: start; */
+  text-align: start;
+  overflow: hidden;
+}
+
+:is(.b) > .badge {
+  --badge-size: 7px;
+  --badge-yoffset: -0.75;
+  transform: var(--badge-translate, none);
+  width: var(--badge-size);
+  height: var(--badge-size);
+  margin-inline-start: 6px;
+  border-radius: calc(var(--badge-size) / 2);
+  background-color: red;
+  z-index: 1;
+}
+:is(.b):is(.badge-on-icon, .badge-on-text) > .badge,
+:is(.b):is(.circle, .singleton) > .badge
+{
+  margin-inline-start: 0px;
+  --badge-translate:
+      translate(calc(var(--badge-size) * 0.50 + 70% - 6px),
+                calc(var(--badge-size) * var(--badge-yoffset)));
+}
+
+.badge[data-badge] {
+  --badge-yoffset: -1.00;
+  border-radius: 9px;
+  width: auto;
+  height: auto;
+  line-height: 0.95;
+  padding: 0px 4px 2px 4px;
+}
+.badge[data-badge]::before {
+  display: inline-block;
+  content: attr(data-badge);
+  font-size: 10px;
+  color: white;
+}
+
+
+
+
+
+
+
+
+.b.outlined {
+  border: 1px solid grey;
+}
+.b.outlined:hover {
+  background-color: lightgrey;
+}
+.b:is(.circle, .singleton) {
+  --button-border-radius: 0px;
+  aspect-ratio: 1;
+  min-width: auto;
+  width: auto;
+  grid: min-content / min-content;
+  place-content: center center;
+}
+.b.circle {
+  --button-border-radius: calc(var(--button-container-height) / 2);
+  --button-side-padding: 0px;
+}
+
+
+/* &.circle {
+  grid-template: auto / 0px auto;
+  --v-selection-control-size: 48px;
+  --button-container-height: 48px;
+  width: var(--v-selection-control-size);
+  height: var(--v-selection-control-size);
+  padding: 0px;
+} */
+
+.b:is(.circle, .singleton) > *,
+.b:is(.circle, .singleton)::before,
+.b:is(.circle, .singleton)::after {
+  grid-area: 1 / 1;
+  place-self: center center;
+}
+.b:is(.circle, .singleton) > .badge {
+  place-self: center end;
+}
+
+/* .circle {
+  &::after {
+    content: "";
+    width: inherit;
+    height: inherit;
+    aspect-ratio: inherit;
+    z-index: -1;
+    border-radius: 50%;
+    background-color: grey;
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  &:not(:disabled, :active):hover::after {
+    opacity: 0.1;
+  }
+  &:not(:checked):active::after {
+    opacity: 0.5;
+    transition: opacity 0.10s ease-in-out;
+  }
+  &:active::after {
+    background-color: currentColor;
+    opacity: 0.5;
+    transition: opacity 0.10s ease-in-out;
+  }
+} */
+
+
+
+
+
+
+/* segmented */
+
+menu.segmented > *:not(legend) {
+  /* --button-border-width? */
+  border: var(--button-border-width, 1px) solid grey;
+  border-radius: 0px;
+}
+
+menu.vertical {
+
+  &.segmented > *:not(legend):first-child {
+    border-start-start-radius: var(--button-border-radius);
+    border-start-end-radius: var(--button-border-radius);
+  }
+  &.segmented > *:last-child {
+    border-end-start-radius: var(--button-border-radius);
+    border-end-end-radius: var(--button-border-radius);
+  }
+  &.segmented > *:not(:last-child) {
+    border-block-end-width: 0px;
+  }
+  /* &:not(.segmented) > *:not(:first-child) {
+    margin-block-start: 6px;
+  } */
+}
+
+
+menu.segmented.segmented {
+  --button-side-padding: 12px;
+  gap: 6px 0;
+}
+menu.segmented > * {
+  border-radius: 0;
+  min-width: 0px;
+}
+menu.segmented > :not(legend):first-child {
+  border-start-start-radius: var(--button-border-radius);
+  border-end-start-radius: var(--button-border-radius);
+}
+menu.segmented > *:last-child {
+  border-start-end-radius: var(--button-border-radius);
+  border-end-end-radius: var(--button-border-radius);
+}
+/* menu.segmented > *:not(:last-child, :has(> input)) {
+  border-inline-end-width: 0px;
+} */
+menu.segmented > *:not(:last-child) {
+  border-inline-end-width: 0px;
+}
+menu.segmented > :has(> input) + * {
+  border-inline-start-width: 0px;
+}
+
+/* menu:not(.segmented) > *:not(:first-child) {
+  margin-inline-start: 12px;
+} */
+
+
+
+
+}
+
+
+@layer behavior {
+
+  /* data-menu 按鈕互動角色基礎設定 */
+
+  [multiple] > * {
+    --multiselectable: true;
+  }
+
+  :has(> [role="tab"]) {
+    --track-tabindex: true;
+  }
+
+  [role="tab"] {
+    --selection: 1;
+    --allow-deselect: false;
+    --has-setsize: true;
+  }
+
+  [data-menu] [role="checkbox"],
+  [data-menu] [role="radio"] {
+    --selection: 1;
+  }
+
+  [data-menu] :not([role="checkbox"], [aria-expanded]) {
+    --allow-deselect: false;
+  }
+  [data-menu] [role="radio"] {
+    --has-setsize: true;
+  }
+
+
+  /* aria-haspopup 彈出式相關 */
+
+  [aria-haspopup] {
+    --selection: aria-expanded;
+  }
+
+  :is([aria-haspopup] + menu, .popup) {
+    position: absolute;
+    /* 用來蓋掉 z-index:0 的其他不相關的 stack-content */
+    z-index: 1;
+    --fixedpos-dodge: true;
+    --fixedpos-placement: bottom-start;
+    --fixedpos-closeup: 0;
+    --fixedpos-offset: 0;
+    --collapse-on-esc: true;
+    --collapse-on-click-outside: true;
+  }
+
+  :is([aria-haspopup] + menu, .popup).manual-close {
+    --collapse-on-click-outside: false;
+  }
+
+  /* data-dropdown 下拉式相關 */
+
+  [data-dropdown] {
+    --allow-deselect: true;
+    --toggle-controls: +;
+  }
+
+  [data-dropdown] + menu {
+    --selection: [tabindex];
+    --allow-deselect: false;
+    --collapse-on-esc: true;
+    --collapse-on-click-outside: true;
+    --collapse-on-blur: true;
+
+  }
+
+  :is([data-dropdown] + menu, .auto-popup) {
+    border: 1px solid var(--border-1);
+    background-color: var(--background-alt);
+  }
+
+  :is([data-dropdown] + menu, menu.auto-popup, .popup-like) > * {
+    margin: 0;
+  }
+
+  :is([data-dropdown] + menu, menu.auto-popup, .popup-like) > :is(button, .b):hover {
+    background-color: var(--background-light);
+  }
+
+  :is([data-dropdown] + menu, menu.auto-popup) {
+    width: max-content;
+  }
+
+  :is([data-dropdown] + menu, menu.auto-popup, .popup-like).vertical {
+    gap: 0;
+    min-width: var(--button-min-width, auto);
+  }
+}
+
+
+
+@layer variety {
+
+:where(.ripple, .ripple-descendant .b) {
+  --ripple-color: color-mix(in oklch, var(--button-hover) 70%, white);
+  background-position: center;
+/*   transition: background 0.1s; */
+}
+:where(.ripple, .ripple-descendant .b):hover {
+  background: var(--button-hover)
+              radial-gradient(circle, transparent 1%, var(--button-hover) 1%)
+              center/15000%;
+  transition: background 0.4s;
+}
+:where(.ripple, .ripple-descendant .b):active {
+  background-color: var(--ripple-color);
+  background-size: 100%;
+  transition: background 0s;
+}
+
+
+:is(.btn-descendant .b, .btn) {
+
+}
+
+
+}
