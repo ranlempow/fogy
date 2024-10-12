@@ -1,0 +1,186 @@
+
+@layer attaches {
+
+:root {
+  --btn-icon-size: 1em;
+}
+
+
+.btn-icon-s { --btn-icon-size: 0.8em; }
+.btn-icon-xs { --btn-icon-size: 0.6em; }
+
+
+.close-before::before,
+.checked-before::before,
+.more-before::before,
+.dot-before::before,
+.loading-before::after,
+.close-after::after,
+.checked-after::after,
+.more-after::after,
+.dot-after::after,
+.loading-after::after,
+.btn-close,
+.btn-more,
+.btn-checked {
+  width: 1em;
+/*   width: var(--btn-icon-size); */
+/*   height: var(--btn-icon-size); */
+  border: 0;
+  aspect-ratio: 1;
+/*   border-radius: calc(var(--btn-icon-size) / 4); */
+  padding: 0;
+}
+
+.close-before::before,
+.checked-before::before,
+.more-before::before,
+.dot-before::before,
+.loading-before::before,
+.arrow-before::before {
+  content: '';
+  display: inline-block;
+  margin-inline-end: 1ch;
+}
+
+.close-after::after,
+.checked-after::after,
+.more-after::after,
+.dot-after::after,
+.loading-after::after,
+.arrow-after::after {
+  content: '';
+  display: inline-block;
+  margin-inline-start: 1ch;
+}
+
+
+
+.close-before::before,
+.close-after::after,
+.btn-close {
+  color: var(--text-main);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-size: 85% 85%;
+  background-position: center;
+  box-sizing: content-box;
+}
+
+.more-before::before,
+.more-after::after,
+.btn-more {
+  background-image: radial-gradient(circle, var(--text-main) 0.10em, transparent 0.13em);
+  background-size: 100% 33.33%;  padding: 0;
+}
+
+.dot-before::before,
+.dot-after::after,
+.btn-dot {
+  background-image: radial-gradient(circle, var(--text-main) 0.17em, transparent 0.20em);
+  background-size: 100% 100%;  padding: 0;
+}
+
+
+.checked-before::before,
+.checked-after::after,
+.btn-checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='currentColor' d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center center;
+  padding: 0;
+}
+
+
+  @layer arrow {
+
+    span.arrow,
+    .arrow-before::before,
+    .arrow-after::after,
+    .btn-arrow {
+      --length: 0.7em;
+      --arrow-thickness: 0.25;
+
+      --border-length: calc(var(--length) * var(--arrow-thickness));
+      /* 旋轉之前要先置中
+         中心點位置本來是0.4em / 2，但因為多了外框變成了 (0.4+0.2em) / 2。
+         這中間差了整整0.1em
+         */
+      --center-offset: calc(var(--length) / 8);
+      --arrow-offset-y: 0;
+      box-sizing: content-box;
+      display: inline-block;
+
+      height: calc(var(--length) * (1 - var(--arrow-thickness)));
+      aspect-ratio: 1;
+      border-style: solid;
+      border-left-width: var(--border-length);
+      border-top-width: var(--border-length);
+      border-right-width: 0;
+      border-bottom-width: 0;
+
+      transform: translate(0, var(--arrow-offset-y))
+                 translate(var(--center-offset), var(--center-offset))
+                 rotate(var(--arrow-rotate-to))
+                 translate(var(--center-offset), var(--center-offset));
+
+/*       margin: calc(var(--length) - var(--border-length)); */
+      --arrow-rotate-to: 135deg;
+      --arrow-offset-y: calc(var(--length) / -8);
+    }
+
+    .arrow {
+      transition: transform 280ms ease-in-out;
+    }
+
+    .a-left,
+    .a-left.arrow-after::after,
+    .a-left.arrow-before::before {
+      --arrow-rotate-to: -45deg;
+      --arrow-offset-y: calc(var(--length) / -8);
+    }
+    .a-up,
+    .a-up.arrow-after::after,
+    .a-up.arrow-before::before {
+      --arrow-rotate-to: 45deg;
+      --arrow-offset-y: calc(var(--length) / -8 + var(--length) / 8);
+    }
+    .a-right,
+    .a-right.arrow-after::after,
+    .a-right.arrow-before::before {
+      --arrow-rotate-to: 135deg;
+      --arrow-offset-y: calc(var(--length) / -8);
+    }
+    .a-down,
+    .a-down.arrow-after::after,
+    .a-down.arrow-before::before {
+      --arrow-rotate-to: 225deg;
+      --arrow-offset-y: calc(var(--length) / -8 + var(--length) / -8);
+    }
+
+  }
+
+
+
+
+
+.loading-before::before,
+.loading-after::after {
+  border-radius: 2em;
+  border: 0.25em solid grey;
+  border-top-color: darkgray;
+  animation: loading 2s linear infinite;
+}
+
+@keyframes loading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+}
+

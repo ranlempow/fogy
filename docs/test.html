@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html class="reset-content">
+<meta charset="utf-8">
+<script src="./fogy.js"></script>
+<script src="./lib/datagrid.js"></script>
+<link href="./site.css" rel="stylesheet" />
+
+<script>
+fogyReady(() => {
+  window.addEventListener('scroll', e => {
+    process_scrollspy(document);
+  }, true);
+});
+</script>
+
+<style>
+:root {
+    --background-body: rgb(245, 225, 160);
+    --background: #f9f5d7;
+}
+blockquote {
+    background: rgb(160, 100, 100);
+}
+
+.toc-menu:not(.all-above, :has(> ul > li:first-of-type > a.active)) {
+    font-size: 0.75em;
+}
+
+.case {
+    font-size: 1.125rem;
+    background: rgb(250, 250, 235);
+    border: 3px solid rgb(160, 130, 130);
+/*     padding: 5px; */
+    & > .present {
+        padding: 20px 10px;
+    }
+    & > pre {
+        margin: 0px;
+    }
+}
+
+.slot {
+    font-family: monospace;
+    line-height: 1.4;
+    padding-left: 40px;
+    & > span {
+        background: coral;
+    }
+}
+</style>
+
+
+<script>
+
+// fogyReady(() => {
+//     ready(`${window.fogyBasepath}/lib/datagrid.js`);
+// });
+
+function formatHtml(html) {
+    const tab = '  ';
+    let result = '';
+    let indent = 0;
+    html = html.trim();
+
+    html.split(/>\s*</).forEach(function(element) {
+        if (element.match( /^\/\w/ )) {
+            indent = Math.max(0, indent - 1);
+        }
+        result += tab.repeat(indent) + '<' + element + '>\n';
+        if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input")  ) { 
+            indent += 1;      
+        }
+    });
+
+    return result.substring(1, result.length-2);
+}
+
+function func_to_code(func) {
+    let code = func.toString();
+    code = code.split('\n').slice(1, -2);
+    code = code.map(ln => ln.slice(4));
+    code = code.join('\n');
+    code = Prism.highlight(code, Prism.languages.javascript, 'javascript');
+    return `<pre class="language-js"><code>${code}</code></pre>`;
+}
+
+function html_to_code(html) {
+    let code = Prism.highlight(html, Prism.languages.html, 'html');
+    return `<pre class="language-html"><code>${code}</code></pre>`;
+}
+
+function view_of_slot({key, slot}) {
+    let children = Object.entries(slot.slots).map(
+            ([key, slot]) => view_of_slot({key, slot}));
+    return h('div.slot',
+             `<span>${key}: ${slot.status ?? '?'}</span>`,
+             `<span> ${slot.core.lastWalkFrame ?? '-'}</span>`,
+             `<span>/${slot.core.lastRenderFrame  ?? '-'}</span>`,
+             ...children);
+}
+
+function _case_html({html}) {
+    html = html.trim();
+    return h('div.case',
+             html_to_code(html),
+             h('div.present', html));
+}
+
+function showcase_html(html) {
+    return h(_case_html)({html});
+}
+
+function _case_master({func}) {
+    renderer = func();
+    return h('div.case',
+             func_to_code(func),
+             h('div.present', [h(renderer)]));
+}
+
+function showcase_renderer(func) {
+    return h(_case_master)({func})
+}
+
+function _case_code({func}) {
+    render(h('div.case',
+             func_to_code(func),
+             h('div.present')), this);
+    let body = this.nextSibling.querySelector('div.present');
+    const fakedoc = {body};
+    func(fakedoc);
+}
+
+function showcase_code(func) {
+    return h(_case_code)(func.name, {func});
+}
+
+window.addEventListener('click', function onclick(e) {
+    selection_behavior(e);
+}, {capture: true});
+window.addEventListener('keydown', function onclick(e) {
+    selection_behavior(e);
+}, {capture: true});
+
+window.addEventListener('scroll', function onscroll(e) {
+    menu_header_x_scroll_lock_behavior(e);
+}, {capture: true});
+
+</script>
+
+
+
+<header>
+<h1>Fogy</h1>
+<nav>
+  <ul>
+    <li><a href=".">home</a></li>
+    <li><a href=".">about</a></li>
+    <li><a href=".">projects</a></li>
+    <li><a href=".">talks</a></li>
+  </ul>
+</nav>
+</header>
+<ul class="checklist btn-icon-s">
+  <li class="close-before">No build tools required.</li>
+  <li class="checked-before">Ideal for JAM stacks.</li>
+  <li class="checked-before">Event delegation by default</li>
+  <li class="more-before">Lots of <a href="/examples.html">examples</a>.</li>
+</ul>
+
+
+<div class="toc-menu" data-scrollspy="content">
+
+<!-- MarkdownTOC -->
+
+- [如何開始](#fogy-getting-start)
+    - 需要CSS基礎
+    - 需要JS基礎
+- [有關於 datagrid](#fogy-about-datagrid)
+- 有關於 `rednerer()`
+    - `renderer(): HtmlValue`
+    - `renderer.pure`
+    - `renderer.events`
+    - `renderer({...props}): HtmlValue`
+    - `renderer({from, to}): HtmlValue`
+    - `renderer({frame}): HtmlValue`
+    - `renderer({state}): HtmlValue`
+    - [`h(renderer): RendererMaker`](#function-make-renderer-as-hvalue)
+    - [`h(renderer)(props)`](#function-make-renderer-with-props)
+    - [`h(renderer)(key, props)`](#function-make-renderer-with-key-and-props)
+    - [`render(htmlValue): NodeValue`](#function-render-hvalue-direct)
+    - [`render(htmlValue, position)`](#function-render-hvalue-to-position)
+    - [`render(htmlValue, slot)`](#function-render-hvalue-to-slot)
+    - `hydrate(htmlValue, key): Slot`
+    - [`mount(htmlValue, position): Slot`](#function-direct-mount)
+    - [`mount(htmlValue, slot): Slot`](#function-remount)
+    - [`mount(slot, position)`](#function-move-slot)
+    - [`mount(slot, slot2)`](#function-move-slot-to-another-slot)
+    - `render(slot)`
+    - `update(slot)`
+    - `update(node)`
+    - `update(document)`
+    - `ready(callback?): Promise`
+    - `ready('state', callback?): Promise`
+    - `ready('network', callback?): Promise`
+    - `ready('*.js'): Promise`
+    - `ready('*.css'): Promise`
+    - [`h('...')`](#function-hvalue)
+    - [`h([...])`](#function-hstring-array-to)
+    - [`` h`...` ``](#function-hstring-template-literals)
+    - `--selection`
+
+<!-- /MarkdownTOC -->
+
+</div>
+<span data-scrollspy-spy></span>
+
+
+<div id="content">
+
+## 如何開始 {#fogy-getting-start}
+
+### 需要CSS基礎
+
+__Peter-Paul Koch__，即將出一本CSS教科書，預計2024年寫完。
+[Peter-Paul Koch的網站][https://www.quirksmode.org/cssbook.html]
+
+### 需要JS基礎
+
+[最新版而且詳盡的JS教科書][https://exploringjs.com/impatient-js/toc.html]
+[解說JS重要概念的網站][https://javascript.info/]
+
+這一篇是有關於事件系統怎麼運作，裡面有詳細得解說與範例
+[][https://javascript.info/event-delegation]
+
+
+
+<script>
+const html1 = `<span>a</sapn>
+`</script>
+
+${showcase_html(html1)}
+
+
+## 有關於 datagrid {#fogy-about-datagrid}
+
+
+
+
+## 有關於 `rednerer()`
+
+${h(view_of_slot)({key: 'root', slot: document.firstChild})}
+
+Learn Nothing is best
+
+- fogy 是直覺了當的，稍微熟悉之後一眼就能看出程式的問題出在哪。
+  而不是弄出難以閱讀的程式碼後，冀望編譯器能夠辨識出深陷其中的瑕疵。
+- fogy的效能不比React差，而且更容易優化。
+- fogy的GC友善度更高，長時間運行的強固性更好。
+
+- fogy是極簡的，不希望開發者的腦袋死記更多呼叫，也不希望消耗更多記憶體還有載入時間。
+- fogy簡單到只需要瀏覽器就能夠練習，把整個程式庫貼上開發命令列之後，就能以互動形式在瀏覽器中練習fogy。
+- 對於fogy使用ES6最新功能，其實是一個誤會，fogy的概念早在ES6之前就已經成形。
+
+
+
+
+render 可以是個function/async function/asycn generator
+render 可以回傳hvalue/undefined/Promise?
+
+slot.xxx        最好只存放常數性質的變數
+slot.state.xxx  存放隨著render一直改變的變數，設定之後會自動update
+slot.local.xxx  會自動udpate的變數
+slot.global.xxx 全部slot共享的變數
+slot.frame.xxx  全部slot在frame中共享的變數，設置後不能改變？
+
+props傳遞的重要性
+狀態保留在何處? view的狀態是可棄置的。
+到底是model狀態還是view狀態
+不提供額外複雜度，除非你真的需要這些功能。
+使用瀏覽器內建機制，能夠與其他函示庫接軌。
+透過工廠方法，靜態組合一群renderer。
+
+
+renderstack? 跳級傳遞的方式? 更方便傳遞props的方式? 比getter更直覺的方式?
+用frame來跨層傳遞全域物件
+
+
+
+不用安裝NodeJS甚至整個生態系，Fogy可以獨立的提供前端應用所需的功能。
+
+
+
+
+### `renderer(): HtmlValue`
+
+最簡單的渲染函式
+
+<script>
+function case_simple_renderer(document) {
+    function renderer() {
+        return h`<span>simple_renderer</span>`
+    }
+    mount(h(renderer), document.body);
+    return;
+}
+</script>
+${showcase_code(case_simple_renderer)}
+
+### `renderer.pure`
+
+### `renderer.events`
+
+### `renderer({...props}): HtmlValue`
+
+可以帶有參數`props`
+
+以下幾種物件，都適合放在`props`當作參數傳遞給視圖函數。
+
+- Promise/defered
+- renderer
+- Node
+- hValue
+- query function
+
+
+
+<script>
+function show_meth({a, b}) {
+    return h`<span>${a} + ${b} = ${a+b}</span>`
+}
+function case_simple_renderer_with_props(document) {
+    function show_meth({a, b}) {
+        return h`<span>${a} + ${b} = ${a+b}</span>`
+    }
+    mount(h(show_meth)({a:3, b:4}), document.body);
+    return;
+}
+</script>
+${showcase_code(case_simple_renderer_with_props)}
+
+由`h(renderer)(props)`這樣的語法來替視圖指定參數。
+
+可以多次呼叫來複寫參數，例如
+
+```js
+let f = h(renderer)({a: 3});
+f = f({a: 4});
+```
+
+
+以下例子，把另一個視圖函數當作參數，傳入容器視圖。如此，容器視圖可以獨立成一個函數，而容器的內容則由傳入的`context`來決定。
+
+<script>
+function case_container(document) {
+    function container({context, boxStyle}) {
+        return h('div.box', {style: boxStyle}, [context]);
+    }
+    mount(h(container)({context: h(show_meth)({a:3, b:4}),
+                        boxStyle: 'background: lightgreen;'}), document.body);
+    return;
+}
+</script>
+${showcase_code(case_container)}
+
+
+
+### `renderer({from, to}): HtmlValue`
+
+- `props.from` 代表的是上一個掛勾
+- `props.to` 代表的是現在的掛勾
+
+有時候，為了效能，而不想生成全新節點。
+可以把上一個掛勾的內容，搬移到現在的掛勾。
+
+以下的範例說明這怎麼運作。
+
+<script>
+function case_transform_renderer(document) {
+    function transform_renderer({from, to}) {
+        const previousNodes = from ? [...from.selectAll()] : [];
+        const lastNode = previousNodes.at(-1);
+        let lastNumber = parseInt(lastNode?.innerHTML ?? 1);
+        return h(h, [...previousNodes, h('span', `${lastNumber + 2}_`)]);
+    }
+    let slot = mount(h(transform_renderer), document.body);
+    render(slot);
+    render(slot);
+    render(slot);
+    return;
+}
+</script>
+${showcase_code(case_transform_renderer)}
+
+每次呼叫`render(slot)`進行渲染，會把上個掛勾內的最後一個節點中的數字，加上2。
+再創造一個新的`<span>`放到新掛鉤的尾部。
+
+
+
+### `renderer({frame}): HtmlValue`
+
+<script>
+function case_simple_renderer_with_frame(document) {
+    function renderer({frame}) {
+        return (h`<span>${frame.time} - ${frame.lastTime} = ` +
+                      h`${frame.time-frame.lastTime}ms</span>`);
+    }
+    mount(h(renderer), document.body);
+    return;
+}
+</script>
+${showcase_code(case_simple_renderer_with_frame)}
+
+### `renderer({state}): HtmlValue`
+
+TODO
+
+
+
+
+### `h(renderer): RendererMaker` {#function-make-renderer-as-hvalue}
+<script>
+function case_make_renderer_as_hvalue(document) {
+    const j = () => h('span', 'j');
+    const k = () => h('span', 'k');
+    function renderer() {
+        return h`${h(j)};${h(k)}`
+    }
+    return renderer;
+}
+</script>
+${showcase_renderer(case_make_renderer_as_hvalue)}
+
+### `h(renderer)(props)` {#function-make-renderer-with-props}
+
+<script>
+function case_make_renderer_with_props(document) {
+    const j = ({a}) => h('span', `j_${a}`);
+    const k = ({b}) => h('span', `k_${b}`);
+    function renderer() {
+        const props = {a:3, b:4};
+        // WHY NOT ?
+        // return h('div', h(j)(props), ';', h(k)(props));
+        return h('div', [h(j)(props), ';', h(k)(props)]);
+    }
+    return renderer;
+}
+</script>
+${showcase_renderer(case_make_renderer_with_props)}
+
+
+### `h(renderer)(key, props)` {#function-make-renderer-with-key-and-props}
+
+TODO
+
+
+
+### `render(htmlValue): NodeValue` {#function-render-hvalue-direct}
+
+<script>
+function case_get_result_render_hvalue(document) {
+    let slot = render(h`<span>case_get_result_render_hvalue</span>`);
+    document.body.append(slot.parentNode);
+    return;
+}
+</script>
+${showcase_code(case_get_result_render_hvalue)}
+
+
+<script>
+function case_get_result_render_renderer(document) {
+    const renderer = () => h`<span>case_get_result_render_renderer</span>`;
+    let slot = render(h(renderer));
+    document.body.append(slot.parentNode);
+    return;
+}
+</script>
+${showcase_code(case_get_result_render_renderer)}
+
+
+<script>
+function case_get_result_render_renderer_complex1(document) {
+    const renderer1 = () => h`<span>complex1</span>`;
+    const renderer2 = () => h`${h(renderer1)}<span>complex2</span>`;
+    let slot = render(h(renderer2));
+    document.body.append(slot.parentNode);
+    return;
+}
+</script>
+${showcase_code(case_get_result_render_renderer_complex1)}
+
+
+<script>
+function case_get_result_render_renderer_with_props(document) {
+    const renderer1 = ({a}) =>
+        h`<span>complex_${a};</span>`;
+    const renderer2 = ({a,b}) => 
+        h`${h(renderer1)(({a}) => ({a}))}<span>complex_${a}_${b}</span>;`;
+
+    let slot = render(h(renderer2)({a: 3, b: 4}));
+    document.body.append(slot.parentNode);
+    let slot2 = render(h(renderer2)({a: 7, b: 8}));
+    document.body.append(slot2.parentNode);
+    return;
+}
+</script>
+${showcase_code(case_get_result_render_renderer_with_props)}
+
+
+
+### `render(htmlValue, position)` {#function-render-hvalue-to-position}
+
+<script>
+function case_direct_render_hvalue(document) {
+    render(h`<span>direct_render_hvalue</span>`, document.body);
+    return;
+}
+</script>
+${showcase_code(case_direct_render_hvalue)}
+
+
+<script>
+function case_direct_render_renderer(document) {
+    const renderer = () => h`<span>direct_render_renderer</span>`;
+    render(h(renderer), document.body);
+    return;
+}
+</script>
+${showcase_code(case_direct_render_renderer)}
+
+### `render(htmlValue, slot)` {#function-render-hvalue-to-slot}
+
+<script>
+function case_direct_render_hvalue_on_slot(document) {
+    const slot = mount(h(() => undefined), document.body);
+    render(h`<span>direct_render_hvalue_on_slot</span>`, slot);
+    return;
+}
+</script>
+${showcase_code(case_direct_render_hvalue_on_slot)}
+
+
+<script>
+function case_direct_render_renderer_on_slot(document) {
+    const slot = mount(h(() => undefined), document.body);
+    const renderer = () => h`<span>direct_render_renderer_on_slot</span>`;
+    render(h(renderer), slot);
+    return;
+}
+</script>
+${showcase_code(case_direct_render_renderer_on_slot)}
+
+
+
+
+
+
+### `hydrate(htmlValue, key): Slot`
+
+TODO:
+
+### `mount(htmlValue, position): Slot` {#function-direct-mount}
+
+<script>
+function case_direct_mount_hvalue(document) {
+    mount(h`<span>direct_mount_hvalue</span>`, document.body);
+    return;
+}
+</script>
+
+${showcase_code(case_direct_mount_hvalue)}
+
+<script>
+function case_direct_mount_renderer(document) {
+    const renderer = () => h`<span>direct_mount_renderer</span>`;
+    mount(h(renderer), document.body);
+    return;
+}
+</script>
+
+${showcase_code(case_direct_mount_renderer)}
+
+
+### `mount(htmlValue, slot): Slot` {#function-remount}
+
+<script>
+function case_remount_change_hvalue(document) {
+    const renderer1 = ({from}) => !from ? h`<span>complex1</span>` : undefined;
+    let slot = mount(h(renderer1), document.body);
+    slot = mount(h`<span>complex2</span>`, slot);
+    slot = mount(h`<span>complex3</span>`, slot);
+    return;
+}
+</script>
+${showcase_code(case_remount_change_hvalue)}
+
+
+<script>
+function case_remount_change_renderer(document) {
+    const renderer1 = () => h`<span>complex1</span>`;
+    const renderer2 = () => h`${h(renderer1)}<span>complex2</span>`;
+    let slot = mount(h(renderer1), document.body);
+    mount(h(renderer2), slot);
+    return;
+}
+</script>
+${showcase_code(case_remount_change_renderer)}
+
+<script>
+function case_remount_change_props(document) {
+    const renderer1 = ({a = 0}) => h`<span>complex_${a}</span>`;
+    let slot = mount(h(renderer1)({a:2}), document.body);
+    mount(h(renderer1)({a:4}), slot);
+    return;
+}
+</script>
+${showcase_code(case_remount_change_props)}
+
+
+
+### `mount(slot, position)` {#function-move-slot}
+### `mount(slot, slot2)` {#function-move-slot-to-another-slot}
+
+### `render(slot)`
+### `update(slot)`
+### `update(node)`
+### `update(document)`
+
+
+
+
+
+<!--
+分為幾種說明
+函數說明
+
+h(node, ...args)
+h(nodelist, ...args)
+h(tag, ...args)
+h(h, ...args)
+h("template", ...args)
+h("style", cssText)
+h(string)
+
+
+{#renderer-bind-key}
+{#renderer-bind-getter}
+
+h(instance)
+
+{#instance-default-key}
+{#instance-bind-getter}
+
+h(pure-func/arrow_func)
+
+renderer({frame})
+renderer({state})
+renderer.events['click']
+renderer.events['+click']
+
+
+
+函數說明+機制說明
+mount(arrow_func)
+mount(instance)
+render()
+update()
+ready(func)
+ready(condition, func)
+ready('state', func);
+ready('network', func);
+ready('*.js');
+ready('*.css');
+
+
+
+css class說明
+.image
+.menu
+
+css varible說明
+--selection
+
+html attribute說明
+
+
+
+概念
+ViewFunction
+ControllerInstance
+RootDocument
+
+
+frame variable
+state variable
+mount plguins (PluginInstance)
+函數說明+外掛說明
+mount(Font)
+mount(Markdown)
+
+
+-->
+
+
+
+### `ready(callback?): Promise`
+
+```js
+ready(() => {
+    if (document.wasDiscarded) {
+        // 這個頁面之前是在背景程式時，被強制關閉。
+    } else {
+        // 這個頁面是第一次開啟或是上次有妥善的關閉。
+    }
+});
+```
+
+### `ready('state', callback?): Promise`
+
+監控頁面生命週期的變化。
+
+```js
+ready('state', (state, prevState) => {
+    switch(state) {
+    case 'hidden':
+    case 'active':
+    case 'passive':
+    case 'frozen':
+    case 'terminated':
+    }
+});
+```
+
+
+### `ready('network', callback?): Promise`
+
+監控網路連線的變化。
+
+```js
+ready('network', (state, prevState) => {
+    if (state.online) {
+        // 網路連線可用
+    } else {
+        // 沒有網路連線
+    }
+});
+```
+
+### `ready('*.js'): Promise`
+```js
+ready('https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js')
+```
+ 
+
+      
+### `ready('*.css'): Promise`
+```js
+ready('https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-light.min.css')
+```
+
+
+
+
+
+### `h('...')` {#function-hvalue}
+
+### `h([...])` {#function-hstring-array-to}
+### `` h`...` `` {#function-hstring-template-literals}
+
+<script>
+
+function case_template() {
+    function renderer() {
+        return h('template',
+                 'simple string<br>',
+                 '<span>simple inline</span><br>',
+                 ['<span>subtemplate1</span>',
+                  ' <span>subtemplate2</span>',
+                  '<br>'],
+                 h('span.node', 'node1'),
+                 h, // insert old children
+                 )
+    }
+    return renderer;
+}
+</script>
+${showcase_renderer(case_template)}
+
+<script>
+function case_template2() {
+    function renderer() {
+        return h(h,
+                 [h('span.node', 'node2'), h('span.node', 'node3')],
+                 '<pre><code>HeHe</code></pre>',
+                 ['<span>subtemplate1</span>',
+                  ' <span>subtemplate2</span>',
+                  '<br>'],
+                 h('span.node', 'node1'),
+                 h, // insert old children
+                 );
+    }
+    return renderer;
+}
+</script>
+${showcase_renderer(case_template2)}
+
+<script>
+function case_place1() {
+    function renderer() {
+        return h(['abc', 'def']);
+    }
+    return renderer;
+}
+
+function case_place2() {
+    function renderer() {
+        return h`abc${h('span[style=color: red]', 'haha')}def`;
+    }
+    return renderer;
+}
+
+function case_place3() {
+    function renderer() {
+        return h(['abc', 'def'], h('span[style=color: red]', 'haha'));
+    }
+    return renderer;
+}
+
+function case_place4() {
+    function renderer() {
+        return h(['abc', h('span[style=color: red]', 'haha'), 'def']);
+    }
+    return renderer;
+}
+</script>
+
+${showcase_renderer(case_place1)}
+
+${showcase_renderer(case_place2)}
+
+${showcase_renderer(case_place3)}
+
+${showcase_renderer(case_place4)}
+
+
+<script>
+
+function case_create_node() {
+    function create_node() {
+        return h('div.contain',
+                 'simple string<br>',
+                 h('span>code>pre>div', 'text 1'),
+                 h('span code pre div', 'text 2'),
+                 h('span code[style=color: green] pre div[style="font-size: 20px"]', 'text 3'),
+                 ['<span>subtemplate1</span>', ' <span>subtemplate2</span>', '<br>'],
+                 h, // insert old children
+                 function onclick() { console.log('click'); },  // Must use on real Node
+                 );
+    }
+    return create_node;
+}
+
+function case_modify_node() {
+    function modify_node() {
+        const e = h('div.contain',
+                    '<div>old LINE 1</div>',
+                    '<div>old LINE 2</div>')
+        return h(e, '<div>new LINE before</div>',
+                 h, '<div>new LINE after</div>',
+                 {style: 'color: red;', 'data-custom': 'abc'});
+    }
+    return modify_node
+}
+
+</script>
+
+${showcase_renderer(case_create_node)}
+
+${showcase_renderer(case_modify_node)}
+
+### `--selection`
+
+<script>
+
+function case_selectable() {
+    function renderer() {
+        let el = h('div', {'data-menu': 'button', style:{'--track-tabindex': 'true'}}, [
+            h('button', {style: '--selection: 1;',
+                      attribute:{'aria-disabled': 'true', 'aria-setsize': ''}}, 'option 1 (disable)'),
+            h('button', {style: '--selection: 1;',
+                      attribute:{'aria-disabled': 'false', 'aria-setsize': ''}}, 'option 2 (enable)'),
+            h('button', {style: '--selection: 1; --allow-deselect: false',
+                      attribute:{'aria-disabled': 'false', 'aria-setsize': ''}}, 'option 3 (non-deselectable)'),
+            h('button', {style: '--selection: 1;',
+                      attribute:{'aria-multiselectable': 'true', 'aria-setsize': ''}}, 'option 4 (multiselectable)'),
+            h('button', {style: '--selection: 1;',
+                      attribute:{'aria-multiselectable': 'true', 'aria-setsize': ''}}, 'option 5 (multiselectable)'),
+            h('button', {style: '--selection: 1; --allow-deselect: false',
+                      attribute:{'aria-controls': 'tab-a', 'aria-expanded': 'false', 'aria-setsize': ''}},
+                      'tab A'),
+            h('button', {style: '--selection: 1; --allow-deselect: false',
+                      attribute:{'aria-controls': 'tab-b', 'aria-expanded': 'false', 'aria-setsize': ''}},
+                      'tab B'),
+            h('div#tab-a', {attribute:{'aria-hidden': 'true'}}, 'Context A'),
+            h('div#tab-b', {attribute:{'aria-hidden': 'true'}}, 'Context B'),
+        ]);
+        // h(el, {"+onclick": function onclick(e) {selection_behavior(e);}});
+        return h('div', h('style', `
+            [aria-selected=true] {
+                color: red;
+            }
+            [aria-hidden=true] {
+                display: none;
+            }`), el);
+    }
+    return renderer;
+}
+
+</script>
+${showcase_renderer(case_selectable)}
+
+
+
+
+
+
+<script>
+function case_dropdown() {
+    function renderer() {
+        return h(dropdown)({data: ['abc', 'def']});
+    }
+    return renderer;
+}
+
+</script>
+${showcase_renderer(case_dropdown)}
+
+
+
+
+
+<script>
+
+for (const event of ['DOMContentLoaded', 'scroll', 'resize']) {
+    window.addEventListener(event, (e) => {
+        process_scrollspy(document);
+        process_fixedpos(document);
+    }, { passive: true, capture: true });
+}
+
+
+const case_xxxX = `
+<div style="background: blue; width:100px; height: 100px"></div>
+<div style="background: red;
+position: absolute;
+width: max-content;
+--fixedpos-dodge: false;
+--fixedpos-axis: y;
+--fixedpos-cross: start;
+--fixedpos-placement: top;
+--fixedpos-main: align-end;
+--fixedpos-closeup: 10;
+--fixedpos-offset: 30;" data-fixedpos>abc</div>
+`
+
+const case_xxx = `
+<div style="overflow: auto; height:150px; position: relative;">
+  <!-- 要把這個div當作容器，要記得設定 position: relative; -->
+  <div style="width:2100px; height: 300px;">
+  <div style="background: blue; width:100px; height: 100px;
+    position: relative; left: 900px; top: 50px;"></div>
+  <div style="background: orange; width: max-content; position: absolute;
+    --fixedpos-dodge: flip;
+    --fixedpos-shift: true;
+    --fixedpos-placement: left-start;
+    --fixedpos-closeup: 0;
+    --fixedpos-offset: 5;" data-fixedpos>abc<br>def</div>
+  <div style="background: red; width: max-content; position: absolute;
+    --fixedpos-shift: true;
+    --fixedpos-placement: top;
+    --fixedpos-closeup: 0;
+    --fixedpos-offset: 5;" data-fixedpos>sub-popup</div>
+  </div>
+</div>
+`;
+
+const case_xxx2 = `
+<div style="background: orange; width: max-content; position: absolute;
+  --fixedpos-placement: right-end;
+  --fixedpos-closeup: 0;
+  --fixedpos-offset: 5;" data-fixedpos="#fixed-target">abc<br>def</div>
+<div style="background: red; width: max-content; position: absolute;
+  --fixedpos-placement: top;
+  --fixedpos-closeup: 0;
+  --fixedpos-offset: 5;" data-fixedpos>sub-popup</div>
+<div id="fixed-target"
+  style="background: blue; width:100px; height: 100px"></div>
+`;
+
+</script>
+
+${showcase_html(case_xxx)}
+
+${showcase_html(case_xxx2)}
+
+
+
+
+<script>
+function _row({values}) {
+    return Object.values(values).map(v => `<span aria-colspan="2">${v}</span>`).join('');
+}
+function _item({values}) {
+    let content = values._content;
+    delete values._content;
+    if (typeof content === 'function') {
+        content = content();
+    }
+    let r = `<div tabindex="-1" aria-setsize="-1">${_row({values})}`;
+    if (content) {
+        r += `<span tabindex="-1" aria-expanded="true" aria-selected="true">show</span>`;
+        r += `<div data-content>${content}</div>`;
+    }
+    r += '</div>';
+    return r;
+}
+function _group({label, aggregates, items}) {
+    let values = items._values ?? [label];
+    aggregates = items._aggregates ?? aggregates;
+    delete items._values;
+    let r = `<div tabindex="-1" aria-expanded="true" aria-selected="true">${_row({values})}</div>`;
+    r += `<div data-subtree>${_content({items})}`
+    if (aggregates) {
+        r += `<div data-aggregates>${aggregates}</div>`;
+    }
+    r += `</div>`;
+    return r;
+}
+function _content({items}) {
+    let r = [];
+    for (const i in items) {
+        const k = parseInt(i).toString();
+        if (k === i || `${k}%` === i) {
+            r.push(_item({values: items[i]}));
+        } else {
+            r.push(_group({label:i, items: items[i]}));
+        }
+    }
+    return r.join('');
+}
+function _table({headers, items}) {
+    let widths, header_content
+    if (Array.isArray(headers)) {
+        widths = headers.map(() => '100px');
+        header_content = headers.map(h => `<span role="columnheader">${h}</span>`).join('');
+    } else {
+        widths = [...(new Array(headers)).keys()].map(() => '100px');
+    }
+    let grid_columns = `grid-template-columns: ${widths.join(' ')}`;
+    let r = '';
+    r += `<div role="table">`
+    if (header_content) {
+        r += `<div data-menu-header-wrap>`;
+        r += `<div data-menu-header style="${grid_columns};">`;
+        r += `<div>${header_content}</div>`;
+        r += '</div>';
+        r += '</div>';
+    }
+    r += `<div data-menu style="${grid_columns};">`;
+    r += _content({items});
+    r += '</div>';
+    r += '</div>';
+    return r;
+}
+
+const ccc2 = {
+    "class 1": {
+        '0%': {col1: 'abc', col2: 'XX'},
+        "class 2": [
+            {col1: 'xyz', col2: 'XX'},
+        ],
+        '1%': {col1: 'def', col2: 'XX'},
+    },
+}
+const ccc = {
+    "class 1": {
+        '0%': {col1: 'abc', col2: 'XX'},
+        "class 2": [
+            {col1: 'xyz', col2: 'XX'},
+        ],
+        '1%': {col1: 'def', col2: 'XX',
+               _content: () => _table({headers: 4, items: ccc2}),
+              },
+    },
+    '0%': {col1: 'ghi'},
+    '1%': {col1: 'jkl', col2:'XX'},
+}
+
+
+
+let case_complex_menu = `
+<style>
+.table > [role="table"] {
+    width: 300px;
+    height: 200px;
+}
+
+
+
+
+
+.complex_menu [aria-role="table"] {
+    display: flex;
+    flex-direction: column;
+}
+.complex_menu [aria-role="columnheader"] {
+    box-sizing: border-box;
+}
+.complex_menu [data-menu-header] {
+    overflow-x: hidden;
+}
+.complex_menu [data-menu] {
+    box-sizing: content-box;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+.complex_menu [data-menu],
+.complex_menu [data-menu-header] {
+    display: grid;
+}
+.complex_menu [data-menu] :where(div[tabindex], [data-subtree], [data-content]),
+.complex_menu :where([data-menu], [data-subtree]) > div[data-aggregates],
+.complex_menu [data-menu-header] > div {
+    grid-column: 1/-1;
+}
+.complex_menu [data-menu] :where(div[tabindex], [data-subtree]),
+.complex_menu [data-menu-header] > div {
+    display: grid;
+    grid-template-columns: subgrid;
+}
+
+.complex_menu :where([data-content], [data-subtree]) {
+    margin-left: 20px;
+}
+
+.complex_menu [aria-setsize][aria-selected="true"] {
+    background-color: red;
+}
+
+.complex_menu [aria-expanded="false"] + [data-content],
+.complex_menu [aria-expanded="false"] + [data-subtree] {
+    display: none;
+}
+
+</style>`;
+case_complex_menu += '\n' + formatHtml(`
+  <div class="table">
+  ${_table({headers: ['col1', 'col2', 'col3', 'col4'], items: ccc})}
+  </div>`);
+
+</script>
+
+${showcase_html(case_complex_menu)}
+
+
+
+
+
+
+
+</div>
+ 
+
+
+
+
+
+
+<!-- 
+<div id="a">
+
+
+
+
+```js
+a = 1;
+${e}
+```
+
+
+
+
+> a
+> 
+> [name=Wei-Chi Peng]
+
+
+
+
+``` markdown
+<a>esc</a>
+```
+
+- a
+* b
+    * a
+    * b
+        - c
+        - d
+
+
+| Column 1 | Column 2          | eerre              | Column 3 |
+| -------- | ----------------- | ------------------ | -------- |
+| Text     | Text [](https://) | [](https:wwwewe//) | Texte    |
+
+
+a
+b
+![](https://hackmd.io/_uploads/HyNaXrQd2.jpg)
+
+| Column 1 | Column 2 | Column 3 |
+| -------- | -------- | -------- |
+| Text     | Text     | Text     |
+
+
+c
+> e
+[color=#d134c4]
+
+</div>
+ -->

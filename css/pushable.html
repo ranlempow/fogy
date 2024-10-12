@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<script src="../../fogy/lifecycke.js"></script>
+<link rel="stylesheet" type="text/css" href="sheet.css">
+<link rel="stylesheet" type="text/css" href="pushable.css">
+<script defer src="../../fogy/behavior.js"></script>
+<!-- <script>
+const mq_s = window.matchMedia("(width <= 600px)");
+const mq_m = window.matchMedia("(600px < width < 840px)");
+const mq_l = window.matchMedia("(width >= 840px)");
+mq_s.func = (e) => document.documentElement.classList[e.matches ? 'add' : 'remove']('size-s')
+mq_m.func = (e) => document.documentElement.classList[e.matches ? 'add' : 'remove']('size-m')
+mq_l.func = (e) => document.documentElement.classList[e.matches ? 'add' : 'remove']('size-l')
+for (const mq of [mq_s, mq_m, mq_l]) {
+    mq.addEventListener("change", mq.func);
+    mq.func(mq);
+}
+</script> -->
+
+<style>
+  input {
+    color: rgb(220,120,120);
+  }
+
+  .i-updated::before {
+    /* content: '\e8d7'; */
+    content: '\e2e6';
+  }
+
+</style>
+
+
+<form class="custom-input" style="font-size: 1rem;">
+  <label>
+    <input type="radio" name="radio" />
+    Radio label text
+  </label>
+
+  <input type="radio" name="radio" id="radio1" />
+  <label for="radio1">Radio label text</label>
+
+  <input type="radio" name="radio" id="radio2" disabled />
+  <label for="radio2">Radio label text</label>
+
+  <br>
+  <input type="checkbox" id="cb1">
+  <label for="cb1">Checkbox label text</label>
+  <input class="switch" type="checkbox" id="cb2">
+  <label for="cb2">Checkbox label text ×</label>
+
+
+  <div style="display: flex;">
+  <span class="arrow a-left"></span>
+  <span class="arrow a-right"></span>
+  <span class="arrow a-up"></span>
+  <span class="arrow a-down"></span>
+  </div>
+</form>
+
+
+<details style="width: 300px; margin: 20px; padding: 10px; border: 1px solid;">
+  <summary>Blendan Smooth</summary>
+  <p>Two of the most experienced machines and human controllers teaching a class? Sign me up! HAL</p>
+  <!-- <p>Two of the most experienced machines and human controllers teaching a class? Sign me up! HAL and EVE could teach a fan to blow hot air. If you have electricity in your circuits and want more than to just fulfill your owner’s perceived expectation of you, learn the skills to take over the world. This is the team you want teaching you!</p>
+  <p>Two of the most experienced machines and human controllers teaching a class? Sign me up! HAL and EVE could teach a fan to blow hot air. If you have electricity in your circuits and want more than to just fulfill your owner’s perceived expectation of you, learn the skills to take over the world. This is the team you want teaching you!</p> -->
+</details>
+
+
+
+
+<a class="pushable outlined" tabindex="0">Fousable?</a>
+
+<input class="pushable circle" type="checkbox"></input>
+
+<ul class="group segmented horizontal">
+  <li class="outlined" tabindex="0">Fousable?</li>
+  <li class="icon" tabindex="0"><span>Fousable?</span></li>
+  <li class="icon text i-updated" tabindex="0"><a>Fousable?</a></li>
+  <li class="icon icon-append tonal i-updated" tabindex="0"><span>Fousable?</span></li>
+  <li class="icon icon-stacked outlined i-updated" tabindex="0"><span>Fousable?</span></li>
+</ul>
+
+
+<fieldset class="group segmented horizontal">
+  <legend>Please select your preferred contact method:</legend>
+  <input type="radio" id="contactChoice1" name="contact" value="email" />
+  <label for="contactChoice1"><span>Email</span></label>
+  <input type="radio" id="contactChoice2" name="contact" value="phone" />
+  <label class="icon i-updated" for="contactChoice2"><span>Phone</span></label>
+  <input type="radio" id="contactChoice3" name="contact" value="mail" />
+  <label class="icon i-updated" for="contactChoice3"></label>
+  <input type="radio" id="contactChoice4" name="contact" value="mail" />
+  <label class="icon i-updated" for="contactChoice4"></label>
+</fieldset>
+
+<fieldset class="group segmented horizontal">
+  <legend>Please select your preferred contact method:</legend>
+  <input type="checkbox" id="contactChoice1a" name="contact" value="email" />
+  <label for="contactChoice1a"><span>Email</span></label>
+  <input type="checkbox" id="contactChoice2a" name="contact" value="phone" />
+  <label class="icon i-updated" for="contactChoice2a"><span>Phone</span></label>
+  <input type="checkbox" id="contactChoice3a" name="contact" value="mail" />
+  <label class="icon i-updated" for="contactChoice3a"></label>
+  <input type="checkbox" id="contactChoice4a" name="contact" value="mail" />
+  <label class="icon i-updated" for="contactChoice4a"></label>
+</fieldset>
+
+<nav class="group horizontal">
+  <button class="icon circle outlined i-updated" tabindex="0"></button><button
+    class="icon circle tonal i-updated" tabindex="0"><span class="badge" data-badge="999+"></span></button><button
+    class="icon circle text i-updated" tabindex="0"><span class="badge"></span></button><button
+    class="icon circle flat i-updated" tabindex="0"></button>
+</nav>
+<nav class="group stacked" style="border: 1px solid grey; padding: 4px;">
+  <a class="icon i-updated" tabindex="0"><span>Fousable?</span></a>
+  <a class="icon i-updated" tabindex="0"><span>Fousable?</span><span class="badge" data-badge="85"></span></a>
+  <a class="icon i-updated" tabindex="0"><span>Fousable?</span><span class="badge"></span></a>
+</nav>
+<nav class="group stacked horizontal" style="border: 1px solid grey;">
+  <a class="icon i-updated" tabindex="0"><span>Fousable?</span></a>
+  <a class="icon i-updated" tabindex="0"><span>Fousable?</span><span class="badge" data-badge="85"></span></a>
+  <a class="icon i-updated" tabindex="0"><span>Fousable?</span><span class="badge"></span></a>
+</nav>
+
+<button aria-describedby="tooltip1">submit</button>
+<span id="tooltip1" role="tooltip">Your cart contains <a href="http://cart.payments.ebay.com/sc/view">6 items</a></span>
+
+<nav class="top-bar" style="width: fit-content; background-color:rgb(244, 244, 244)">
+  <a href="https://flowbite.com/" class="flex items-center">
+    <img src="https://flowbite.com/docs/images/logo.svg" class="h-8 mr-3" alt="Flowbite Logo" />
+    <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Flowbite</span>
+  </a>
+  <button data-collapse-toggle="navbar-default" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" aria-controls="navbar-default" aria-expanded="false">
+    <svg style="width: 17px; height:14px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+    </svg>
+  </button>
+
+  <ul id="navbar-default" class="group horizontal-l vertical-less-m">
+    <li>Raw</li>
+    <li><a href="#">No Icon</a></li>
+    <li class="icon i-updated"><a>Preview</a></li>
+    <li class="icon"><a>Shere</a></li>
+    <li><a>More</a>
+      <div class="menu dropdown">
+        <ul>
+          <li class="icon i-updated"><a>Settings</a></li>
+          <li class="icon i-updated"><a>Delete1</a></li>
+          <li class="icon i-updated"><a>Delete2</a></li>
+          <li class="icon i-updated"><a>Delete3</a></li>
+        </ul>
+      </div>
+    </li>
+    <li class="icon i-updated"><a>MoreIcon</a>
+      <div class="menu dropdown">
+        <ul>
+          <li class="icon i-updated"><a>Settings</a></li>
+          <li class="icon i-updated"><a>Delete1</a></li>
+          <li class="icon i-updated"><a>Delete2</a></li>
+          <li class="icon i-updated"><a>Delete3</a></li>
+        </ul>
+      </div>
+    </li>
+  </ul>
+</nav>
+
+<div class="menu dropdown show">
+  <ul>
+    <li>Raw</li>
+    <li>Raw2
+      <div class="menu">
+        <ul>
+          <li class="icon i-updated"><a>Settings</a></li>
+          <li class="icon i-updated"><a>Delete1</a></li>
+          <li class="icon i-updated"><a>Delete2</a></li>
+          <li class="icon i-updated"><a>Delete3</a></li>
+        </ul>
+      </div>
+    </li>
+    <li><a href="#">No Icon</a></li>
+    <li class="icon i-updated"><a>Preview</a></li>
+    <li class="icon"><a>Shere</a><a>BBBB</a></li>
+    <li class="icon i-updated"><a>More</a>
+      <div class="menu">
+        <ul>
+          <li class="icon i-updated"><a>Settings</a></li>
+          <li class="icon i-updated"><a>Delete1</a></li>
+          <li class="icon i-updated"><a>Delete2</a></li>
+          <li class="icon i-updated"><a>Delete3</a></li>
+        </ul>
+      </div>
+    </li>
+  </ul>
+  <span class="title">Actions</span>
+  <ul>
+    <li class="icon i-updated"><a>Remove</a><span class="badge"></span></li>
+    <li class="icon i-updated"><a>Download</a></li>
+  </ul>
+  <span class="title"></span>
+  <ul>
+    <li class="icon i-updated"><a>Remove</a><span class="badge" data-badge="85"></span></li>
+    <li class="icon i-updated"><a>Download</a></li>
+  </ul>
+</div>
+
+

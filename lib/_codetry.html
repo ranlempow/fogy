@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<script src="https://codemirror.net/codemirror.js"></script>
+<script src="../../fogy/lib/engine.js"></script>
+<script src="../../fogy/lib/lifecycle.js"></script>
+
+<script>
+const {EditorState, StateField} = CM['@codemirror/state'];
+const {EditorView, keymap, drawSelection, dropCursor, runScopeHandlers,
+       highlightActiveLine, highlightSpecialChars, ViewPlugin} = CM['@codemirror/view'];
+const {defaultKeymap, indentWithTab, history, historyField,
+        undoDepth, redoDepth, undo, redo,
+        cursorLineUp,  cursorLineDown} = CM['@codemirror/commands'];
+const {indentOnInput, indentUnit, LanguageDescription, bracketMatching,
+       syntaxTree, ParseContext,
+       syntaxHighlighting, defaultHighlightStyle} = CM['@codemirror/language'];
+// const {javascript} = CM['@codemirror/lang-javascript'];
+// const {markdown, markdownLanguage} = CM['@codemirror/lang-markdown'];
+// const {css} = CM["@codemirror/lang-css"];
+const {tagHighlighter, tags, classHighlighter, highlightTree} = CM['@lezer/highlight'];
+const {parseMixed, NodeType, TreeCursor, TreeNode, BufferNode} = CM['@lezer/common'];
+
+console.log(CM['@lezer/common']);
+
+const checkboxPlugin = ViewPlugin.fromClass(class {
+  decorations;
+  constructor(view) {
+    // this.decorations = checkboxes(view)
+  }
+
+  update(update) {
+    if (update.docChanged) {
+      update.changes.iterChanges((fromA, toA, fromB, toB, t) =>
+        console.log(fromA, toA, fromB, toB, [t.toString()]));
+    }
+    // if (update.docChanged || update.viewportChanged)
+    //   this.decorations = checkboxes(update.view)
+  }
+});
+
+
+ready(() => {
+  let startState = EditorState.create({
+    extensions: [checkboxPlugin],
+  });
+
+  let view = new EditorView({
+    state: startState,
+    parent: document.getElementById('editor'),
+  })
+  console.log(view);
+});
+
+
+
+
+
+
+
+
+
+</script>
+
+
+<style>
+
+#main {
+  display: flex;
+  flex-flow: row nowrap;
+  height: 300px;
+}
+#main > div {
+  flex: 1;
+  border-color: grey;
+  border-right: 1px solid;
+}
+
+
+
+
+
+
+</style>
+
+<div id="main">
+  <div id="editor"></div>
+  <div id="editor2"></div>
+  <div id="editor3"></div>
+</div>
+
+

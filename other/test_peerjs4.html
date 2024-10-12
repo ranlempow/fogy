@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+
+<head>
+<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+<script src="../fogy/engine.js"></script>
+<script src="../fogy/lifecycle.js"></script>
+</head>
+
+<div id="root"></div>
+<script>
+
+const connections = {};
+let peer;
+let recieved = [];
+
+function render_peer({peer}) {
+  return h([
+     `<p>ID: ${peer.id} | \
+     ${peer.disconnected ? '<button onclick="reconnect()">reconnect</button>' : 'connected ' }\
+     ${peer.destroyed ? 'destroyed ' : '' }</p>`,
+     `<input type="text" id="receiver-id" title="Input the remote ID">`,
+     `<button onclick="join()">join</button>`
+  ]);
+}
+
+function render_connections({connections}) {
+  const conns = [];
+  for (const conn_name of Object.keys(connections)) {
+    const conn = connections[conn_name];
+    conns.push(`<p>CONN: ${conn_name} | ${conn.open ? 'open ' : ''}${conn.peer}</p>\
+               <button onclick="sendto('${conn_name}')">send</button>`);
+  }
+  return h('div', ['<h2>connections</h2>', ...conns]);
+}
+render_connections.prototype.pure = false;
+
+
+function render_message({recieved}) {
+  const msgs = [];
+  for (const [conn_name, data] of recieved) {
+    msgs.push(`<p>${conn_name}: ${data}</p>`);
+  }
+  return h('div', ['<h2>messages</h2>', ...msgs]);
+}
+
+function render_root() {
+  const nodes = [];
+  if (peer) {
+    nodes.push(h(render_peer)(() => ({
+      peer,
+      id: peer.id,
+      disconnected: peer.disconnected,
+      destroyed: peer.destroyed,
+    })));
+  }
+
+  nodes.push(h(render_connections)({connections}));
+  nodes.push(h(render_message)(() => ({
+    recieved,
+    length: recieved.length,
+  })));
+
+  return h(nodes);
+}
+
+
+const root = mount(h(render_root), {tailOf: '#root'});
+
+
+
+
+
+
+
+
+class PeerSubscription {
+  connection;
+  peddingConn;
+
+  name;
+  targetId;
+
+  send(data) {
+    if (this.connection?.open) {
+      this.connection.send(data);
+    }
+  }
+
+  bindDataChannel(topic, conn) {
+    this.isPedding = undefined;
+    this.connection = conn
+    conn.on('data', function (data) {
+      // ## 旁通道
+      // 傳遞額外資料，使用不同recordId來實現
+      //
+      // this.queue.push(data);
+      topic.receive(data, {source: this.name, targetId: this.targetId});
+      update(root);
+    });
+    conn.on('close', function () {
+      // delete connections[conn.metadata.name];
+      update(root);
+    });
+  }
+
+  disconnect() {
+    if (this.connection?.open) {
+      this.connection.close();
+      this.connection = undefined;
+    }
+  }
+
+  get isPedding() {
+    return !!this.peddingConn;
+  }
+
+  connect(topic) {
+    // Close old connection
+    if (this.isPedding) {
+      return;
+    } else if (!this.connection) {
+      // 等待連線成功，做出標記，防止重複發起連線
+      // this.isPedding = true;
+    } else if (this.connection.open) {
+      return;
+    } else {
+      this.connection = undefined;
+    }
+
+    // Create connection to destination peer specified in the input field
+    let conn = this.peddingConn = topic.localPeer.connect(this.targetId, {
+      // reliable: true,
+      metadata: {
+          name: topic.name,
+          timing: Date.now(),
+      }
+    });
+
+    conn.on('open', function () {
+      if (this.peddingConn !== conn) {
+        return;
+      }
+      this.peddingConn = undefined;
+
+      let loser;
+      if (this.connection?.open) {
+        // ## interlink 互連
+        // 由主動連結方負責，如果自己的主動連線比對方還要晚，負責關閉自己的主動連線。
+
+        if (conn.metadata.timing >= this.connection.metadata.timing) {
+          loser = conn;
+        } else {
+          loser = this.connection;
+        }
+        loser.send("Already connected by passive client");
+        setTimeout(function() { loser.close(); }, 500);
+      }
+
+      if (loser !== conn) {
+        this.bindDataChannel(topic, conn);
+        update(root);
+      }
+    });
+  }
+}
+
+
+class PeerTopic {
+
+  subscriptions = {};
+  taps = [];
+  sharePeers = true;
+  localPeer;
+
+
+  addSubscript(targetName, targetId) {
+    let sub = (this.subscriptions[targetName] ||= new PeerSubscription());
+    sub.name = targetName;
+    if (sub.targetId !== targetId) {
+      sub.disconnect();
+    }
+    sub.targetId = targetId;
+    this.connectAll();
+  }
+
+  get name() {
+    return this.taps[0] ? this.taps[0].clientId : null;
+  }
+
+  async requestPeers(operation) {
+    // 在跟server請求群組列表，主動連結其他人
+
+    // TODO: relink 斷線重連
+    //
+
+    // this.addSubscript(...)
+  }
+
+  reconnect() {
+    this.localPeer.reconnect();
+  }
+
+
+  receive(data, {source, targetId}) {
+    if (targetId) {
+      if (this.subscriptions[source].targetId !== targetId) {
+        // source maybe delete or reconnect or disconnect
+        return;
+      }
+    }
+    if (this.sharePeers && data.peerList) {
+      // ## peershare 端點分享
+      // 通訊協定的一部分，在沒有server的幫助之下更新群組列表。
+      //
+      for (const [name, targetId] Object.entries(data.peerList)) {
+        if (name === this.name) continue;
+        this.addSubscript(name, targetId);
+      }
+    }
+    for (const tap of this.taps) {
+      if (tap.name === data.tapName) {
+        this.tap.dispatch(data.actions, {isRemote: true});
+      }
+    }
+  }
+
+  broadcast(tap) {
+    const peerList = {};
+    peerList[this.name] = this.localPeer.id;
+    for (const sub of this.subscriptions) {
+      if (sub.connection?.open) {
+        peerList[sub.name] = sub.targetId;
+      }
+    }
+    for (const sub of this.subscriptions) {
+      if (sub.connection?.open) {
+        let wantedPairs = tap.preparePush(sub);
+        let actions = tap.extractActions(wantedPairs);
+        if (actions.length > 0) {
+          const data = {tapName: tap.name, actions};
+          if (this.sharePeers) {
+            data.peerList = peerList;
+          }
+          sub.send(data);
+        }
+        tap.finishPush(sub);
+      }
+    }
+  }
+
+  connectAll() {
+    if (this.localPeer) throw new Error('must call register() first');
+    for (const sub of this.subscriptions) {
+      if (!sub.connection?.open && sub.targetId) {
+        sub.connect(this);
+      }
+    }
+  }
+
+  register() {
+    if (this.localPeer) return;
+    let peer = this.localPeer = new Peer(null, {
+        debug: 2
+    });
+    // peer.on('open', function (id) {
+    //   update(root);
+    // });
+    peer.on('connection', function (conn) {
+      if (this.subscriptions[conn.metadata.name]) {
+        let counterpart_conn = this.subscriptions[conn.metadata.name].connection;
+        if (counterpart_conn?.open) {
+          if (conn.metadata.timing >= counterpart_conn.metadata.timing) {
+            // 被動方不需要斷線，切斷連線是主動方的責任
+            return;
+          }
+        }
+      }
+      let sub = (this.subscriptions[conn.metadata.name] ||= new PeerSubscription());
+      sub.name = conn.metadata.name;
+      sub.targetId = conn.peer;
+      sub.bindDataChannel(this, conn);
+    });
+
+    peer.on('disconnected', function () {
+        update(root);
+    });
+    peer.on('close', function() {
+        update(root);
+    });
+    peer.on('error', function (err) {
+        console.log(err);
+        alert('' + err);
+    });
+  }
+}
+
+
+
+class FileRecordCheckpoint {
+  IdMap = {};
+  // IdMap.aIdx
+  // IdMap.lastWrite
+
+  pathMap = {};
+  // pathMap.ids = []
+
+  appliedLength = 0;
+
+  clone() {
+    const checkpoint = new Checkpoint();
+    for (const key of Object.keys(this.IdMap)) {
+      checkpoint.IdMap[key] = {
+        ...this.IdMap[key],
+      }
+    }
+    for (const key of Object.keys(this.pathMap)) {
+      checkpoint.pathMap[key] = {
+        ids: [...this.pathMap[key].ids],
+      }
+    }
+
+    checkpoint.appliedLength = this.appliedLength;
+    return checkpoint;
+  }
+}
+
+
+function merge_record(actionsByClient, actions) {
+  const new_actionsByClient = {};
+  for (const action of actions) {
+    const {clientId, seqNumber} = action;
+    if (typeof clientId !== 'string') throw new Error('TypeError clientId');
+    if (typeof seqNumber !== 'number') throw new Error('TypeError seqNumber');
+
+    let a = (new_actionsByClient[clientId] ||= {
+                ...(actionsByClient[clientId] || {
+                  endSeqNumber: 0,
+                  maxSeqNumber: 0,
+                }),
+            });
+
+    if (a[ seqNumber ] === undefined) {
+      a[ seqNumber ] = action;
+      a.maxSeqNumber = Math.max(seqNumber + 1, a.maxSeqNumber);
+      for (let i = a.endSeqNumber ; i < a.maxSeqNumber; i++) {
+        if (!a[i]) {
+          a.endSeqNumber = i;
+          break;
+        }
+      }
+    }
+  }
+  return new_actionsByClient;
+}
+
+
+class Tap {
+
+  clientId;
+  actionsByClient = {};
+
+  remotes = new WeakMap();
+  subscriptions = {};
+  publishes = {};
+  topic;
+
+  currentCp = null;
+  checkpoints = [];
+  actions = [];
+
+  // constructor(clientId) {
+  //   // this.name = name;
+  //   if (!clientId) {
+  //     // clientId = crypto.randomBytes(64).toString('hex');
+  //     clientId = 'abc';
+  //   }
+  //   this.clientId = clientId;
+  //   // this.actionsByClient = {};
+  //   // this.currentCp = null;
+  //   // this.checkpoints = [];
+  //   // this.actions = [];
+  // }
+
+  resetCheckpoint(lastSame) {
+    let largestCp;
+    for (const cp of this.checkpoints) {
+      if (cp.appliedLength <= lastSame) {
+        if (!largestCp || largestCp.appliedLength < cp.appliedLength) {
+          largestCp = cp;
+        }
+      }
+    }
+    if (!largestCp) {
+      largestCp = this.createCheckpoint();
+      this.checkpoints.push(largestCp);
+    }
+    this.currentCp = largestCp;
+    return largestCp;
+  }
+
+  get object() {
+    // 這個通常是Store物件，但其實可以是任何物件
+  }
+
+
+  get nextSeqNumber() {
+    return this.actionsByClient[this.clientId]?.endSeqNumber || 0;
+  }
+
+  getLocalClients() {
+    const currentClients = [];
+    for (const [clientId, a] of Object.entries(this.actionsByClient)) {
+      if (a.endSeqNumber > 0) { // TODO: or a.maxSeqNumber
+        currentClients.push([clientId, a.endSeqNumber - 1]);
+      }
+    }
+    return currentClients;
+  }
+
+  extractActions(wantedPairs) {
+    const actions = [];
+    for (const [clientId, start] of wantedPairs) {
+      let start;
+      let end = this.actionsByClient[clientId].endSeqNumber;
+      if (end > start) {
+        for(let i=start; i<end; i++) {
+          actions.push(this.actionsByClient[clientId][i]);
+        }
+      }
+    }
+    return actions;
+  }
+
+  preparePush(remote) {
+    const wantedPairs = [];
+    this.remotes.get(remote);
+    let remoteClients = this.remotes.get(remote);
+    if (!remoteClients) {
+      remoteClients = {}
+      this.remotes.set(remote, remoteClients);
+    }
+    const localClients = this.getLocalClients();
+    for (const [clientId, localEndSeqNumber] of localClients) {
+      let remoteEndSeqNumber = remoteClients[clientId] || 0;
+      if (localEndSeqNumber > remoteEndSeqNumber) {
+        wantedPairs.push([clientId, remoteEndSeqNumber]);
+      }
+    }
+    return wantedPairs;
+  }
+
+  finishPush(remote) {
+    this.remotes.set(remote, this.getLocalClients());
+  }
+
+  async pull({docService}, {isRemote = true} = {}) {
+    const actions = await this._do_pull({docService});
+    if (actions.length > 0) {
+      this.dispatch(actions, { isRemote });
+    }
+  }
+
+  async push({docService, supportServices, fullPush = false}) {
+    let wantedPairs = this.preparePush(docService);
+    let actions = this.extractActions(wantedPairs);
+    if (actions.length > 0) {
+      await this._do_push(actions, {docService, supportServices, fullPush});
+      this.finishPush(docService);
+    }
+  }
+
+
+  // append(newPartActions) {
+  dispatch(newPartActions, {isRemote} = {}) {
+    newPartActions = Array.isArray(newPartActions) ? newPartActions : [newPartActions];
+
+    if (!isRemote) {
+      let nextSeqNumber = this.nextSeqNumber;
+      let timestamp = Date.now();
+      for (const action of newPartActions) {
+        if (action.seqNumber === undefined) {
+          action.seqNumber = nextSeqNumber;
+        } else if (action.seqNumber !== nextSeqNumber) {
+          throw new Error('seqNumber error');
+        }
+        action.clientId ||= this.clientId;
+        action.timestamp ||= timestamp;
+        nextSeqNumber++;
+      }
+    }
+
+    let new_actionsByClient = merge_record(this.actionsByClient, newPartActions);
+
+    // 確定 newParts 中間沒有斷層
+    const oldParts = [...this.actions];
+    const newParts = []
+    for (const [clientId, actionMap] of Object.entries(new_actionsByClient)) {
+      const oldIdx = this.actionsByClient[clientId].endSeqNumber;
+      const newIdx = new_actionsByClient[clientId].endSeqNumber;
+      for (let i = oldIdx; i < newIdx; i++) {
+        const action = actionMap[i];
+        if (!action || action.seqNumber !== i) throw new Error('seqNumber must continue');
+        newParts.push(action);
+      }
+    }
+    Object.assign(this.actionsByClient, new_actionsByClient);
+
+    const actionCmp = (a, b) => {
+      return a.timestamp !== b.timestamp ? a.timestamp - b.timestamp :
+             a.clientId !== b.clientId ? a.clientId.localeCompare(b.clientId) :
+             a.seqNumber - b.seqNumber;
+    }
+
+    if (newParts.length === 0) {
+      return;
+    } else if (newParts.length > 1) {
+      newParts.sort(actionCmp);
+    }
+    let last = this.actions.length ? this.actions[this.actions.length - 1] : null;
+    let need_sort = false;
+    for (const action of newParts) {
+      if (last) {
+        if (actionCmp(last, action) <= 0) {
+          need_sort = true;
+        }
+      }
+      this.actions.push(action);
+      last = action;
+    }
+
+    // this.actions.push(...newParts);
+    if (need_sort) {
+      this.actions.sort(actionCmp);
+    }
+
+    // 確定新出現的 actions 有沒有造成回朔
+    let endSame;
+    for (endSame = 0; i < oldParts.length; endSame++) {
+      if (this.actions[endSame] !== oldParts[endSame]) {
+        break;
+      }
+    }
+
+    if (endSame !== this.currentCp?.appliedLength) {
+      // 有回朔而需要 rebuild
+      this.resetCheckpoint(endSame);
+    }
+
+    this._apply();
+
+    if (!isRemote) {
+      this._broadcast()
+    }
+  }
+
+
+  _broadcast(action) {
+    // if (action.clientId === this.clientId) {
+    if (this.topic) {
+      this.topic.broadcast(this);
+    }
+    for (const publish of Object.values(this.publishes)) {
+      // TODO: push actions;
+      // publish.send(action);
+      this.push(publish)
+    }
+    // }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  async _do_pull({docService}) {
+    let response = await docService.requestRecord({
+      repository: this.repo.name,
+      recordId: 'FILES',
+      clientPairs: Object.entries(this.repo.getCurrentClients()),
+    });
+    const remote = this.get_remote(docService);
+    remote.remoteClients = Object.fromEntries(response.clientPairs);
+    return response.actions;
+  }
+
+  async _do_push(actions, {docService, supportServices, fullPush = false}) {
+    for (const action of actions) {
+      const objectId = action.content?.objectId;
+      if (action.type === 'write' &&
+          objectId &&
+          !remote.existObjects.has(objectId)
+          ) {
+
+        let bytesArr = this.readObject(content.objectId, {
+          supportServices,
+          cached: true,
+        });
+        if (bytesArr) {
+          await docService.sendObject({
+            repository: this.repo.name,
+            objectId,
+            bytesArr,
+          });
+          remote.existObjects.add(objectId);
+        } else if (fullPush) {
+          throw new Error(`'${objectId}' Object not found in any services`);
+        }
+      }
+    }
+    await docService.sendRecord({
+      repository: this.repo.name,
+      recordId: 'FILES',
+      actions: actions,
+    });
+    // TODO:
+    // remote.remoteClients = {...this.repo.getCurrentClients()};
+  }
+
+  _apply() {
+    // action.type = create | write | delete | move
+    // action.content = { path } // create | move
+    // action.content = { inline: "string" } // write
+    // action.content = { recordId } // write
+    // action.content = { objectId } // write
+    //
+    // action.parents = ClientPair
+    // action.clientId
+    // action.seqNumber
+    // action.timestamp
+    //
+    // 使用move action,來對delete之前的節點來做recorver;
+
+
+    const {IdMap, pathMap} = this.currentCp;
+
+    for (let aIdx = this.currentCp.appliedLength;
+             aIdx < this.actions.length; aIdx++) {
+      const action = this.actions[aIdx];
+      const Id = `${action.clientId}.${action.seqNumber}`;
+      const mainParent = action.parents ? action.parents[0] : undefined;
+
+      // if (action.clientId === this.clientId) {
+      //   this.nextSeqNumber = action.seqNumber + 1;
+      // }
+      if (IdMap[Id]) continue;
+
+      IdMap[Id] = {
+        aIdx,
+        lastWrite: null,
+      }
+
+      if (action.type === 'create' ||
+          action.type === 'move') {
+        const dst = action.content?.path
+        const ids = (pathMap[dst] ||= {ids : []}).ids;
+        ids.push(Id);
+      }
+      if (action.type === 'delete' ||
+          action.type === 'move') {
+        const srcAction = actions[IdMap[mainParent]?.aIdx];
+        if (srcAction &&
+            (srcAction.type === 'create' ||
+             srcAction.type === 'move')) {
+          const src = srcAction.content.path;
+          if(src) {
+            const ids = (pathMap[src] ||= {ids : []}).ids;
+            const idx = ids.indexOf(mainParent);
+            if (idx > -1) {
+              ids.splice(idx, 1);
+            }
+            if (ids.length === 0) {
+              delete pathMap[src];
+            }
+          }
+        }
+      }
+      if (action.type === 'write') {
+        const targetAction = actions[IdMap[mainParent]?.aIdx];
+        if (targetAction &&
+            (targetAction.type === 'create' ||
+             targetAction.type === 'move')) {
+          IdMap[mainParent].lastWrite = Id;
+        }
+      }
+    }
+  }
+
+}
+
+
+
+</script>
+

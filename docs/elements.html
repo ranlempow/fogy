@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<script src="./fogy.js"></script>
+<script src="./lib/datagrid.js"></script>
+<link href="./site.css" rel="stylesheet" />
+
+<script>
+window.pageHead = {
+  variables: {
+    icons: ['material-symbols-light/lock-open-right-outline'],
+  },
+};
+fogyReady(() => {
+  process_scrollspy(document);
+  window.addEventListener('scroll', e => {
+    process_scrollspy(document);
+  }, true);
+
+  // mount(h(PageHead)({
+  //   variables: {
+  //     icons: ['material-symbols-light/lock-open-right-outline'],
+  //   },
+  // }), {tailOf: document.head});
+
+  window.addEventListener('click', function onclick(e) {
+    selection_behavior(e);
+  }, true);
+  window.addEventListener('keydown', function onclick(e) {
+    selection_behavior(e);
+  }, true);
+  window.addEventListener('focus', function onclick(e) {
+    dialog_behavior(e);
+  }, true);
+  window.addEventListener('wheel', function onclick(e) {
+    dialog_behavior(e);
+  }, {passive:false});
+});
+
+</script>
+
+<header>
+<h1>Fogy Elements</h1>
+<nav>
+  <ul>
+    <li><a href=".">home</a></li>
+    <li><a href=".">about</a></li>
+    <li><a href=".">projects</a></li>
+    <li><a href=".">talks</a></li>
+  </ul>
+</nav>
+</header>
+<ul class="checklist btn-icon-s">
+  <li class="close-before">No build tools required.</li>
+  <li class="checked-before">Ideal for JAM stacks.</li>
+  <li class="checked-before">Event delegation by default</li>
+  <li class="more-before">Lots of <a href="/examples.html">examples</a>.</li>
+</ul>
+
+## 目錄
+
+<div class="toc-menu" data-scrollspy="body">
+
+<!-- MarkdownTOC -->
+
+- [Inputs](#demo-inputs)
+- Button-Old 按鈕測試（舊版）
+    - [Lite Form](#deom-lite-form)
+- Form elements
+- [Article \(Flow Content\)](#demo-article)
+- [Dialog](#demo-dialog)
+- Button 按鈕測試
+- [Panel](#demo-panel)
+- [H-Text Compact](#demo-h-text-compact)
+
+<!-- /MarkdownTOC -->
+</div>
+<span data-scrollspy-spy></span>
+
+<!-- <svg style="display: none;">
+<symbol viewBox="0 0 24 24" id="material-symbols-light-lock-open-right-outline"><path d="M6.616 20h10.769q.269 0 .442-.173t.173-.442v-8.77q0-.269-.173-.442T17.385 10H6.615q-.269 0-.442.173T6 10.616v8.769q0 .269.173.442t.443.173M12 16.5q.633 0 1.066-.434q.434-.433.434-1.066t-.434-1.066T12 13.5t-1.066.434Q10.5 14.367 10.5 15t.434 1.066q.433.434 1.066.434M6 20V10zm.616 1q-.672 0-1.144-.472T5 19.385v-8.77q0-.67.472-1.143Q5.944 9 6.616 9H14V7q0-1.671 1.165-2.835Q16.329 3 18 3t2.836 1.165T22 7h-1q0-1.25-.875-2.125T18 4t-2.125.875T15 7v2h2.385q.67 0 1.143.472q.472.472.472 1.144v8.769q0 .67-.472 1.143q-.472.472-1.143.472z"></path></symbol>
+</svg> -->
+
+## Animate {#demo-animate}
+
+<style>
+.debug-container,
+.debug-container ul {
+  border: 2px dotted;
+}
+[data-flip-key="C1"] {
+  display: flex;
+  margin-left: 50px;
+}
+[data-flip-key="C1"] li {
+  background-color: lightgray;
+  margin: 10px;
+}
+</style>
+
+
+<div class="debug-container" data-flip-key="C1">
+<ul data-flip-key="L1">
+    <li data-flip-key="A">A</li>
+    <li data-flip-key="B">B</li>
+    <li data-flip-key="X">X</li>
+    <li data-flip-key="C">C<br>CC<br>CCC</li>
+    <li data-flip-key="D">D</li>
+</ul>
+<ul data-flip-key="L2">
+    <li>1</li>
+    <li>2</li>
+</ul>
+</div>
+
+<script>
+fogyReady(() => {
+  
+  function test_animate_simple() {
+    let element = document.querySelectorAll(`[data-flip-key="L2"]`)[0];
+    let tl = new Timeline();
+    tl.fromTo(element, {dx: 100}, {dx: 0, dy: 50, duration: 1000})
+      .to({dy: 100, duration: 1000});
+
+    let group = new AnimationGroup();
+    group.setStage(tl);
+    group.play();
+  }
+
+
+  function play_the_map() {
+      document.querySelector('[data-flip-key="X"]').style.display = 'none';
+      let s = Flip.getState('.debug-container [data-flip-key]'); 
+
+      document.querySelector('[data-flip-key="A"]').style.display = 'none';
+      document.querySelector('[data-flip-key="X"]').style.display = null;
+      document.querySelector('[data-flip-key="C"]').innerHTML = 'C';
+      let ul0 = document.querySelector('[data-flip-key="L1"]')
+      ul0.parentElement.append(ul0);
+
+      let tl = new Timeline();
+      tl.from(s, {duration: 2000});
+
+      let group = new AnimationGroup();
+      group.setStage(tl);
+      group.play();
+  }
+  play_the_map();
+
+});
+
+</script>
+
+
+## Inputs {#demo-inputs}
+
+<label for="pet-select">Must Choose a pet:</label>
+<select name="pets" id="pet-select" required>
+  <option value="" disabled selected hidden>Please choose an option</option>
+  <option value="dog">Dog</option>
+  <option value="cat">Cat</option>
+  <option value="hamster">Hamster</option>
+  <option value="parrot">Parrot</option>
+  <option value="spider">Spider</option>
+  <option value="goldfish">Goldfish</option>
+</select>
+
+<label for="cars">Must Choose a car:</label>
+<select name="cars" id="cars" multiple required>
+  <option value="volvo">Volvo</option>
+  <option value="saab">Saab</option>
+  <option value="opel">Opel</option>
+  <option value="audi">Audi</option>
+</select> 
+
+
+## Button-Old 按鈕測試（舊版）
+
+<button>按鈕</button>
+<button type="submit">按鈕</button>
+<button type="button">按鈕</button>
+<button type="reset">按鈕</button>
+
+<button disabled>按鈕</button>
+
+<input type="button" />
+<input type="file">
+
+<button class="ripple">Default</button>
+<input type="button" value="<input>"/>
+<button>
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  Icon
+</button>
+<button type="submit">Submit</button>
+<button type="button">Type Button</button>
+<button type="reset">Reset</button>
+<button disabled>Disabled</button>
+<button class="btn-custom">Custom</button>
+<input type="file">
+
+### Lite Form {#deom-lite-form}
+
+<form>
+  <button>Default</button>
+  <input type="button" value="<input>"/>
+  <button>Icon <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg></button>
+  <button type="submit">Submit</button>
+  <button type="button">Type Button</button>
+  <button type="reset">Reset</button>
+  <button disabled>Disabled</button>
+  <button class="btn-custom btn-large" type="button">Large Custom</button>
+  <input type="file">
+</form>
+
+## Form elements
+
+<form>
+  <label for="email">Email</label>
+  <input type="email" name="email" id="email" placeholder="john.doe@gmail.com">
+  <label for="id">User id (read only)</label>
+  <input readonly="" name="id" id="id" value="04D6H89Z">
+  <label for="disabled">Random disabled input</label>
+  <input disabled="" name="disabled" id="disabled" placeholder="Because why not?">
+  <label for="about">About me</label> 
+  <textarea name="about" id="about" placeholder="I am a textarea..."></textarea>
+  <label>Choose a Doe:</label> 
+  <div>
+    <input type="radio" id="john" name="drone" value="john" checked="">
+    <label for="john">John Doe</label>
+  </div>
+  <div>
+    <input type="radio" id="jane" name="drone" value="jane" checked="">
+    <label for="jane">Jane Doe</label>
+  </div>
+  <div>
+    <input type="radio" id="johnny" name="drone" value="johnny" checked="">
+    <label for="johnny">Johnny Doe</label>
+  </div>
+  <br>
+  <input type="checkbox" name="remember" id="remember" checked="">
+  <label for="remember">Remember me</label>
+  <input type="submit" value="Submit">
+  <input type="reset" value="Reset"> 
+</form>
+
+
+## Article (Flow Content) {#demo-article}
+
+<p>Below is some code, you can copy it with <kbd>Ctrl-C</kbd>. Did you know, <code>alert(1)</code> can show an alert in JavaScript!</p>
+<pre><code>// This logs a message to the console and check out the scrollbar.<br>console.log('Hello, world!')</code></pre>
+<p>Here's a horizontal rule and image because I don't know where else to put them.</p>
+<hr>
+<img src="https://placekitten.com/408/287" alt="Example kitten" />
+<img src="https://i.imgur.com/mOq7DbU.jpg" alt="Example kitten" />
+<pre>      Good old preformatted text, no code at all
+       |\_/|        ****************************    (\_/)
+      / @ @ \       *  "Purrrfectly pleasant"  *   (='.'=)
+     ( &gt; º &lt; )      *       Poppy Prinz        *   (")_(")
+      `&gt;&gt;x&lt;&lt;´       *   (pprinz@example.com)   *
+      /  O  \       ****************************
+</pre>
+<p>And here's a nicely marked up table!</p>
+<table>
+  <caption>Monthly savings</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Quantity</th>
+      <th>Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Godzilla</td><td>2</td><td>$299.99</td></tr>
+    <tr><td>Mozilla</td><td>10</td><td>$100,000.00</td></tr>
+    <tr><td>Quesadilla</td><td>1</td><td>$2.22</td></tr>
+  </tbody>
+</table>
+
+<details>
+  <summary>Some summary/details can't hurt!</summary>
+  <p>Lorem ipsum dolor sit blah blah.</p>
+</details>
+
+<p> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque dictum hendrerit velit, quis ullamcorper sem congue ac. Quisque id magna rhoncus, sodales massa vel, vestibulum elit. Duis ornare accumsan egestas. Proin maximus lacus interdum leo molestie convallis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Ut iaculis risus eu felis feugiat, eu mollis neque elementum. Donec interdum, nisl id dignissim iaculis, felis dui aliquet dui, non fermentum velit lectus ac quam. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. <strong>This is strong,</strong> this is normal, <b>this is just bold,</b> <em>and this is emphasized!</em> And heck, <a href="/">here</a>'s a link. </p>
+
+
+
+## Dialog {#demo-dialog}
+
+The dialog (form, and menu) tag
+
+<template id="dialog-animal">
+  <dialog aria-modal="true" aria-hidden="true" id="dialog" class="c">
+    <header>This is a sample dialog</header>
+    <form method="dialog">
+      <p>What is your favorite pet animal?</p>
+      <menu>
+        <button value="feline" data-a11y-dialog-hide>Cats</button>
+        <button value="canine">Dogs</button>
+        <button value="other">Others</button>
+      </menu>
+    </form>
+  </dialog>
+  <button data-a11y-dialog-show="${id}"> Show ${id} By A11y </button>
+  <div>
+    <button dialog-target="${id}" onclick="openDialog(this)"> Show me the ${id}! </button>
+    <span class="dialog-result">Your answer: feline</span>
+  </div>
+</template>
+<!-- 這邊不要空行 -->
+<slot slot-from-template="dialog-animal" id="dialog-1"></slot>
+<slot slot-from-template="dialog-animal" id="dialog-offcanvas" class="offcanvas"></slot>
+<slot slot-from-template="dialog-animal" id="dialog-top" class="offcanvas top"></slot>
+<slot slot-from-template="dialog-animal" id="dialog-top-center" class="offcanvas top center"></slot>
+<slot slot-from-template="dialog-animal" id="dialog-left-full" class="offcanvas left" style="height: 100%"></slot>
+
+
+
+<script>
+function openDialog(el) {
+  let output = el.parentElement.querySelector('.dialog-result');
+  if (output) {
+    output.innerText = "Your answer: ???";
+  }
+  let dialog = el.getAttribute('dialog-target');
+  dialog = document.getElementById(dialog);
+  dialog.removeAttribute('aria-hidden');
+  dialog.showModal();
+  h(dialog, {
+    onclose: e => closeDialog(dialog, output),
+  });
+}
+
+function closeDialog(el, output) {
+  el.setAttribute('aria-hidden', 'true');
+  output && (output.innerText = "Your answer: ".concat(el.returnValue));
+}
+
+</script>
+
+
+
+## Button 按鈕測試
+
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>ab</span>
+  <span class="badge" data-badge="999+"></span>
+</button>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u></span>
+  <span class="badge" data-badge="999+"></span>
+</button>
+<button class="b badge-on-text" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u></span>
+  <span class="badge" data-badge="999+"></span>
+</button>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u>2</span>
+</button>
+
+<div style="resize: both; overflow: hidden;">
+<menu class="scroll expanded segmented" style="height: 100%; width: 100%; color: green;">
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>ab</span>
+  <span class="badge"></span>
+</button>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u></span>
+  <span class="badge" data-badge="999+"></span>
+</button>
+<button class="b badge-on-icon" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>ab</span>
+  <span class="badge"></span>
+</button>
+<button class="b badge-on-icon" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u></span>
+  <span class="badge" data-badge="999+"></span>
+</button>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u>2</span>
+</button>
+</menu>
+</div>
+
+<menu>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>ab</span>
+</button>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u></span>
+</button>
+<hr/>
+<button class="b" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span>He<u>llo</u>2-00020200000</span>
+</button>
+</menu>
+
+<button class="b circle outlined" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+</button>
+<button class="b singleton tonal" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span class="badge" data-badge="999+"></span>
+</button>
+<button class="b singleton text" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  <span class="badge"></span>
+</button>
+<button class="b circle flat" tabindex="0">
+  <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+</button>
+
+<nav class="group horizontal">
+  <button class="i circle outlined" tabindex="0">
+    <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  </button>
+  <button class="i circle tonal" tabindex="0">
+    <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+    <span class="badge" data-badge="999+"></span>
+  </button>
+  <button class="i circle text" tabindex="0">
+    <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+    <span class="badge"></span>
+  </button>
+  <button class="i circle flat" tabindex="0">
+    <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  </button>
+</nav>
+
+<nav aria-label="Page navigation example">
+  <ul class="pagination">
+    <li class="page-item">
+      <a class="page-link" href="#" aria-label="Previous">
+        <span>&laquo;</span>
+      </a>
+    </li>
+    <li class="page-item"><a class="page-link" href="#">1</a></li>
+    <li class="page-item"><a class="page-link" href="#">2</a></li>
+    <li class="page-item"><a class="page-link" href="#">3</a></li>
+    <li class="page-item">
+      <a class="page-link" href="#" aria-label="Next">
+        <span>&raquo;</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-html="true" title="<em>Tooltip</em> <u>with</u> <b>HTML</b>">
+  Tooltip with HTML
+</button>
+
+<button type="button" class="btn-close" aria-label="Close"></button>
+<button type="button" class="btn-more"></button>
+
+<div style="font-size: 1.5rem;">
+<button type="button" class="btn-close" aria-label="Close"></button>
+<button type="button" class="btn-more"></button>
+<button type="button" class="btn-checked"></button>
+</div>
+
+<div class="btn-group" role="group" aria-label="Basic checkbox toggle button group">
+  <input type="checkbox" class="btn-check" id="btncheck1" autocomplete="off">
+  <label class="btn btn-outline-primary" for="btncheck1">Checkbox 1</label>
+
+  <input type="checkbox" class="btn-check" id="btncheck2" autocomplete="off">
+  <label class="btn btn-outline-primary" for="btncheck2">Checkbox 2</label>
+
+  <input type="checkbox" class="btn-check" id="btncheck3" autocomplete="off">
+  <label class="btn btn-outline-primary" for="btncheck3">Checkbox 3</label>
+</div>
+
+<div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+  <div class="btn-group me-2" role="group" aria-label="First group">
+    <button type="button" class="btn btn-primary">1</button>
+    <button type="button" class="btn btn-primary">2</button>
+    <button type="button" class="btn btn-primary">3</button>
+    <button type="button" class="btn btn-primary">4</button>
+  </div>
+  <div class="btn-group me-2" role="group" aria-label="Second group">
+    <button type="button" class="btn btn-secondary">5</button>
+    <button type="button" class="btn btn-secondary">6</button>
+    <button type="button" class="btn btn-secondary">7</button>
+  </div>
+  <div class="btn-group" role="group" aria-label="Third group">
+    <button type="button" class="btn btn-info">8</button>
+  </div>
+  <div class="input-group">
+    <div class="input-group-text" id="btnGroupAddon">@</div>
+    <input type="text" class="form-control" placeholder="Input group example" aria-label="Input group example" aria-describedby="btnGroupAddon">
+  </div>
+</div>
+
+
+<menu class="segmented" style="--button-border-radius: 4px;">
+  <label class="b">
+    <span>Dollar</span>
+    <select>
+      <option>$</option>
+      <option>£</option>
+      <option>€</option>
+    </select>
+  </label>
+  <label class="b expanded">
+    <svg class="icon"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+    <span>價格</span>
+    <input type="text" placeholder="Find a repository">
+    <svg class="icon append"><use xlink:href="#material-symbols-light-lock-open-right-outline"/></svg>
+  </label>
+  <button class="b">
+    <span>Search</span>
+  </button>
+</menu>
+
+
+## Menu {#demo-menu}
+
+<script>
+function btn_ul({to}) {
+  return `
+<ul>
+  <li class="b i-updated"><a>Settings</a></li>
+  <li class="b i-updated"><a class="float-before">BBBB</a><a>Delete1</a></li>
+  <li class="b i-updated arrow-after"><a>Delete2</a></li>
+  <li class="b i-updated dot-after"><a>Delete3</a></li>
+  <li class="b i-updated loading-after"><a>Delete4</a></li>
+</ul>
+`;
+}
+</script>
+
+<menu class="vertical">
+  <ul>
+    <li class="b checked-after"><span>Raw</span></li>
+    <li class="b more-after"><span>Raw2</span>
+      <menu class="vertical">
+        <slot slot-from-code="h(btn_ul)"></slot>
+      </menu>
+    </li>
+    <li class="b"><a href="#">No Icon</a></li>
+    <li class="b i-updated close-after"><a>Preview</a></li>
+    <li class="b">
+      <a>Shere</a>
+      <a class="float-after">BBBB</a>
+    </li>
+    <li class="b i-updated">
+      <a class="float-before">BBBB</a>
+      <a>More</a>
+      <menu class="vertical auto-popup">
+        <ul>
+          <li class="b i-updated"><a>Settings</a></li>
+          <li class="b i-updated"><a>Delete1</a></li>
+          <li class="b i-updated"><a>Delete2</a></li>
+          <li class="b i-updated"><a>Delete3</a></li>
+        </ul>
+      </menu>
+    </li>
+  </ul>
+  <span class="title">Actions</span>
+  <hr>
+  <ul>
+    <li class="b i-updated"><a>Remove</a><span class="badge"></span></li>
+    <li class="b i-updated"><a>Download</a></li>
+  </ul>
+  <span class="title"></span>
+  <hr>
+  <ul>
+    <li class="b i-updated"><a>Remove</a><span class="badge" data-badge="85"></span></li>
+    <li class="b i-updated"><a>Download</a></li>
+  </ul>
+</menu>
+
+
+<template id="t1"><span class="arrow"></span></template>
+<slot slot-from-template="t1" class="a-down"></slot>
+<slot slot-from-template="t1" style="--arrow-thickness: 0.1;"></slot>
+<span class="arrow"></span>
+<span class="arrow a-up"></span>
+<span class="arrow a-down" style="--arrow-thickness: 0.1;"></span>
+<span class="arrow a-left"></span>
+<span class="arrow a-right"  style="--arrow-thickness: 0.4;"></span>
+
+## Panel {#demo-panel}
+
+
+
+<!-- background-image: linear-gradient(transparent 0%, rgb(119, 70, 61) 100%); -->
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+  </symbol>
+  <symbol id="info-fill" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+  </symbol>
+  <symbol id="exclamation-triangle-fill" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+  </symbol>
+</svg>
+
+<template id="longer-paragraph">
+  <p>Aww yeah, you successfully read this important alert message. This example text is going to run a bit longer so that you can see how spacing within an alert works with this kind of content.</p>
+</template>
+
+<div class="c narrow-s">
+  <slot slot-from-template="longer-paragraph"></slot>
+  <p>A simple primary alert—check it out! </p>
+</div>
+
+<div class="c narrow-s alert alert-success" role="alert">
+  <h4 class="alert-heading">Well done!</h4>
+  <slot slot-from-template="longer-paragraph"></slot>
+  <footer><p>Whenever you need to, be sure to use margin utilities to keep things nice and tidy.</p></footer>
+</div>
+
+<div class="d narrow-s alert alert-primary" role="alert">
+  <svg width="24" height="24" role="img" aria-label="Info:"><use xlink:href="#info-fill"/></svg>
+  <p>An example alert with an icon</p>
+</div>
+
+
+
+<div class="c narrow-xs">
+  <h4>Card in other card</h4>
+
+with `.narrow-xs`
+
+<slot slot-from-template="longer-paragraph"></slot>
+  <div style="border: 1px solid red;">
+
+this sub-block is xs narrow.
+
+<slot slot-from-template="longer-paragraph"></slot>
+  </div>
+  <div class="c">
+    <header><h5>Inner card</h5></header>
+
+this container is normal narrow, `.narrow-xs` is block by `.c`
+
+<slot slot-from-template="longer-paragraph"></slot>
+    <p>A simple primary alert—check it out! </p>
+  </div>
+  <p>A simple primary alert—check it out! </p>
+</div>
+
+
+<div class="c narrow-xs-descendant size-l">
+  <h4>Card in other card</h4>
+
+with `.narrow-xs-descendant`
+
+<slot slot-from-template="longer-paragraph"></slot>
+  <div style="border: 1px solid red;">
+
+of course, sub-block is xs narrow.
+
+<slot slot-from-template="longer-paragraph"></slot>
+  </div>
+  <div class="c">
+    <header><h5>Inner card</h5></header>
+
+this container is xs narrow, `.narrow-xs-descendant` is not block by `.c`
+
+<slot slot-from-template="longer-paragraph"></slot>
+  </div>
+</div>
+
+
+
+
+
+
+
+<!-- https://picsum.photos/seed/picsum/200/300 -->
+<div class="c sheet elevation-3" style="overflow: hidden; resize: both; width: 400px; font-size: 1.2em">
+  <img src="https://picsum.photos/seed/picsum/1280/960" alt="Placeholder image"/>
+  <header>
+    <h5>Component</h5>
+    <button class="b singleton close-after"></button>
+  </header>
+  <header>
+    <h5>Component</h5>
+    <button class="b singleton close-after"></button>
+  </header>
+  <div class="content">
+    <div class="content">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus nec
+      iaculis mauris.
+      <hr>
+      <a href="#">@bulmaio</a>. <a href="#">#css</a> <a href="#">#responsive</a>
+      <br />
+      <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+    </div>
+  </div>
+  <footer>
+    <menu>
+      <a href="#" class="b card-footer-item"><span>Save</span></a>
+    </menu>
+  </footer>
+</div>
+
+<div class="c sheet elevation-3" style="overflow: hidden; resize: both; width: 400px; font-size: 1.2em">
+  <header>
+    <h5>Component</h5>
+    <button class="b singleton close-after"></button>
+  </header>
+  <img src="https://picsum.photos/seed/picsum/1280/960" alt="Placeholder image"/>
+  <div class="content">
+    <div class="content">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus nec
+      iaculis mauris.
+      <hr>
+      <a href="#">@bulmaio</a>. <a href="#">#css</a> <a href="#">#responsive</a>
+      <br />
+      <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+    </div>
+  </div>
+  <footer>
+    <menu>
+      <a href="#" class="b card-footer-item"><span>Save</span></a>
+    </menu>
+  </footer>
+</div>
+
+<div class="c sheet elevation-3" style="overflow: hidden; resize: both; width: 400px; font-size: 1.2em">
+  <header>
+    <h5>Component</h5>
+    <!-- <button class="b singleton">
+      <span class="icon">
+        <i class="fas fa-angle-down" aria-hidden="true"></i>
+      </span>
+      X
+    </button> -->
+    <button id="switch-tab1" class="b">tab1</button>
+    <button id="switch-tab2" class="b">tab2</button>
+    <button class="b singleton close-after"></button>
+  </header>
+  <div class="content page" data-active>
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus nec
+    iaculis mauris.
+    <hr>
+    <a href="#">@bulmaio</a>. <a href="#">#css</a> <a href="#">#responsive</a>
+    <br />
+    <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+  </div>
+  <div class="content page">
+    Page 2.
+    <hr>
+    <a href="#">@bulmaio</a>. <a href="#">#css</a> <a href="#">#responsive</a>
+    <br />
+    <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+  </div>
+  <!-- <p>abcdef</p>
+  <hr>
+  <p>abcdef</p>
+  <img
+        src="https://bulma.io/assets/images/placeholders/1280x960.png"
+        alt="Placeholder image"
+      /> -->
+  <footer>
+    <menu>
+      <a href="#" class="b card-footer-item"><span>Save</span></a>
+      <a href="#" class="b card-footer-item"><span>Edit</span></a>
+      <a href="#" class="b card-footer-item"><span>Delete</span></a>
+    </menu>
+  </footer>
+</div>
+
+<script>
+fogyReady(() => {
+  const container = document.getElementById('switch-tab1')
+    .parentElement.parentElement;
+  const pages = [...container.querySelectorAll('.page')];
+  for (let i of [0, 1]) {
+    h(document.getElementById(`switch-tab${i + 1}`), {
+      onclick: e => {
+        for (const el of pages) {
+          delete el.dataset.active;
+        }
+        pages[i].dataset.active = "";
+      },
+    });
+  }
+});
+</script>
+
+
+## H-Text Compact {#demo-h-text-compact}
+
+<details>
+<summary>文章標題縮排的詳細展示</summary>
+
+
+<style>
+article#example-article {
+  width: 600px;
+}
+article#example-article :where(h1, h2, h3, h4, h5, h6, ul, ol, p) {
+  border: 1px dotted #ccc;
+}
+</style>
+<article id="example-article" style="height: 200px; overflow: auto;">
+   <h1>
+      文章標題（一級）</h1>
+   <p class="example">
+      段落，也許是前言。上邊界對一級標題收緊。文章區塊的行高大於全域行高，<!--
+         -->預設為1.7em。</p>
+   <section class="example">
+      <h2>二級標題</h2>
+      <p>這是一個段落，可以是對二級標題的內容詳述，上邊界對二級標題收緊。</p>
+      <p>這是另一個段落，可見上邊界不收緊了。</p>
+   </section>
+   <section id="grouping-content">
+      <h2>
+         段落、清單、引用區塊等群組元素對標題的收緊
+      </h2>
+      <section class="example">
+         <h3>三級標題</h3>
+         <blockquote>
+            <p>這是一個引用區塊段落，可見上邊界對標題收緊；而三級標題則對二級標題收緊。</p>
+            <p>這是第二個引用區塊段落，可見上邊界不收緊了。</p>
+            <p>在文章中的引用區塊，會縮進二個字元（行動裝置上縮進一字元），並使用楷體。</p>
+            <footer>— Author Name, Publication</footer>
+         </blockquote>
+         <p>引用區塊段落後面的文字依然正常。</p>
+         <blockquote>
+           <p>引用區塊段落與後面的標題</p>
+         </blockquote>
+         <h3>三級標題</h3>
+         <ol>
+            <li>
+               這是一個有序清單，</li>
+            <li>
+               可見上邊界對標題收緊。</li>
+         </ol>
+         <ol>
+            <li>
+               這是另一個有序清單，</li>
+            <li>
+               可見上邊界不收緊了。</li>
+         </ol>
+         <h3>三級標題</h3>
+         <ul>
+            <li>
+               這是一個無序清單，</li>
+            <li>
+               可見上邊界對標題收緊。</li>
+         </ul>
+      </section>
+   </section>
+   <section id="poem-and-rule-for-well-knit">
+      <div class="example">
+         <h6>六級標題</h6>
+         <h5>五級標題</h5>
+         <h4>四級標題</h4>
+         <h3>三級標題</h3>
+         <h2>二級標題</h2>
+         <h2>二級標題</h2>
+         <h3>三級標題</h3>
+         <h4>四級標題</h4>
+         <h5>五級標題</h5>
+         <h6>六級標題</h6>
+      </div>
+      <div class="example">
+         <h1>一級標題</h1>
+         <h1>一級標題</h1>
+         <p>一級標題不會互相收緊。</p>
+      </div>
+   </section>
+   <section id="descendant">
+      <h3>後代章節元素不影響群組收緊</h3>
+      <p>
+         後代章節元素<code>section</code>不會影響各個群組元素對上級標題的收緊。</p>
+      <h3>
+         比如說……</h3>
+      <div class="example">
+         <h2>
+            二級標題（在<code>section</code>下）</h2>
+         <section>
+            <h2>
+               二級標題（在<code>section</code>下）</h2>
+            <section>
+               <h3>
+                  三級標題（在<code>section</code>下）</h3>
+               <section>
+                  <h4>
+                     四級標題（在<code>section</code>下）</h4>
+                  <section>
+                     <p>
+                        這是一個放在後代章節元素<code>section</code>中的段落<!--
+                           -->，雖然和四級標題並非同輩，但仍然會對標題收緊。</p>
+                  </section>
+                  <section>
+                     <h4>
+                        四級標題（在<code>section</code>下）</h4>
+                     <section>
+                        <h5>
+                           五級標題（在<code>section</code>下）</h5>
+                        <section>
+                           <h6>
+                              六級標題（在<code>section</code>下）</h6>
+                        </section>
+                     </section>
+                  </section>
+               </section>
+            </section>
+         </section>
+      </div>
+   </section>
+   <section id="sibling">
+      <h3>同輩章節元素則否</h3>
+      <p>
+         互為「同輩」的二個章節元素下的標題則不互相收緊。</p>
+      <div class="example">
+         <section id="section-jia">
+            <h2>
+               二級標題（<code>section</code>甲）</h2>
+         </section>
+         <section id="section-yi">
+            <h2>
+               二級標題（<code>section</code>乙，與甲同輩）</h2>
+         </section>
+         <section id="section-bing">
+            <h3>
+               三級標題（<code>section</code>丙，與甲乙同輩）</h3>
+         </section>
+         <section id="section-ding">
+            <h4>
+               四級標題（<code>section</code>丁，與甲乙丙同輩）</h4>
+         </section>
+         <section id="section-wu">
+            <h5>
+               五級標題（<code>section</code>戊，與甲乙丙丁同輩）</h5>
+         </section>
+         <section id="section-ji">
+            <h6>
+               六級標題（<code>section</code>己，與甲乙丙丁戊同輩）</h6>
+         </section>
+         <section id="section-geng">
+            <p>
+               這是一個段落，屬於<code>section</code>庚，與甲乙丙丁戊己同輩。</p>
+         </section>
+      </div>
+   </section>
+</article>
+</details>
+
