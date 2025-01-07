@@ -15,7 +15,7 @@ async function loadFogy() {
   const scripts = document.querySelectorAll(`script[src]`);
   // let script_root;
   for (const s of scripts) {
-    if (s.src.endsWith('/fogy.js')) {
+    if (s.src.endsWith('/fogy.js') || s.src.endsWith('/fogy')) {
       window.fogyTag = s;
       window.fogyBasepath = s.src.slice(0, -('/fogy.js'.length));
       break
@@ -63,6 +63,7 @@ async function loadFogy() {
     // TODO:
     // loaders.push(loadScript('DOM'));
     await Promise.all(loaders);
+
   }
 }
 
@@ -74,5 +75,8 @@ if (!window.fogyLoading) {
 
   if (!document.documentElement.dataset.build) {
     document.documentElement.style.display = 'none';
+    window.fogyLoading.then(() => {
+      delete document.documentElement.style.display;
+    });
   }
 }
