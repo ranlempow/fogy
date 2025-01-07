@@ -64,9 +64,6 @@ async function loadFogy() {
         import('https://cdn.jsdelivr.net/npm/marked-highlight/lib/index.umd.js'),
         loadStyle('https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.0/build/styles/default.min.css'),
         import('https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.0/build/es/highlight.min.js').then(hljs => (window.hljs = hljs.default)),
-        // loadStyle('https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-light.min.css'),
-        // loadScript('https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js'),
-        // loadScript('https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js'),
         import(`${window.fogyBasepath}/lib/direct-compile.js`),
       );
     }

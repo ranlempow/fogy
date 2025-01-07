@@ -192,7 +192,7 @@ html.reset {
 @layer content {
 html.reset-content {
   /* 段落的頭尾還是需要對齊 */
-  p { text-align: justify; text-justify: ideographic;}
+  p { text-align: justify; /*text-justify: ideographic;*/ }
 
   /* 全形空白（U+3000, ideographic space）來取代text-indent */
   p { text-indent: 2em; }

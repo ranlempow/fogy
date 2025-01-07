@@ -35,6 +35,16 @@ function loadScript(path, afterReady = false) {
     });
 }
 
+function addStyle(css) {
+  let s = document.createElement("style");
+  s.type = "text/css";
+  // s.styleSheet.cssText = css;
+  s.appendChild(document.createTextNode(css));
+  if (s.getRootNode() === s) {
+      document.head.appendChild(s);
+  }
+}
+
 function loadStyle(path) {
   let s = document.querySelector(`link[href='${path}']`) ||
           document.createElement("link");
@@ -71,12 +81,6 @@ function importModule(url) {
 
 
 
-
-function fogyReady(func) {
-  window.fogyLoading.then(func);
-}
-
-
 async function loadFogy() {
   const scripts = document.querySelectorAll(`script[src]`);
   // let script_root;
@@ -107,9 +111,9 @@ async function loadFogy() {
     if (!window.fogyTag.dataset.noMarkdown) {
       loaders.push(
         loadScript('https://cdn.jsdelivr.net/npm/marked@5.0.4/marked.min.js'),
-        loadStyle('https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-light.min.css'),
-        loadScript('https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js'),
-        loadScript('https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js'),
+        loadScript('https://cdn.jsdelivr.net/npm/marked-highlight/lib/index.umd.js'),
+        loadStyle('https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.0/build/styles/default.min.css'),
+        loadScript('https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.0/build/highlight.min.js'),
         loadScript(`${window.fogyBasepath}/lib/direct-compile.js`),
       );
     }
@@ -119,9 +123,19 @@ async function loadFogy() {
       );
     }
     if (!window.fogyTag.dataset.noStyle) {
-      loaders.push(
-        loadStyle(`${window.fogyBasepath}/css/2024/core.css`),
-      );
+      // loaders.push(
+      //   loadStyle(`${window.fogyBasepath}/css/2024/core.css`),
+      // );
+      loaders.push(addStyle(`
+        @layer reset, basic, reset-after-basic, basic-form, attaches,
+           btn, behavior, card, table, variety, other, elevation, custom, control;`));
+      loaders.push(loadStyle(`${window.fogyBasepath}/css/2024/reset.css`));
+      loaders.push(loadStyle(`${window.fogyBasepath}/css/2024/attaches.css`));
+      loaders.push(loadStyle(`${window.fogyBasepath}/css/2024/other.css`));
+      loaders.push(loadStyle(`${window.fogyBasepath}/css/2024/btn.css`));
+      loaders.push(loadStyle(`${window.fogyBasepath}/css/2024/card.css`));
+      loaders.push(loadStyle(`${window.fogyBasepath}/css/2024/sheet.css`));
+
     }
     loaders.push(loadScript('DOM'));
     await Promise.all(loaders);
@@ -149,9 +163,14 @@ async function loadFogy() {
 
 if (!window.fogyLoading) {
   window.fogyLoading = loadFogy();
-
+  window.fogyReady = function fogyReady(func) {
+    window.fogyLoading.then(func);
+  }
   if (!document.documentElement.dataset.build) {
     document.documentElement.style.display = 'none';
+    window.fogyLoading.then(() => {
+      delete document.documentElement.style.display;
+    });
   }
 }
 
