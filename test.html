@@ -67,8 +67,8 @@ function formatHtml(html) {
             indent = Math.max(0, indent - 1);
         }
         result += tab.repeat(indent) + '<' + element + '>\n';
-        if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input")  ) { 
-            indent += 1;      
+        if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input")  ) {
+            indent += 1;
         }
     });
 
@@ -80,12 +80,14 @@ function func_to_code(func) {
     code = code.split('\n').slice(1, -2);
     code = code.map(ln => ln.slice(4));
     code = code.join('\n');
-    code = Prism.highlight(code, Prism.languages.javascript, 'javascript');
+    // code = Prism.highlight(code, Prism.languages.javascript, 'javascript');
+    code = hljs.highlight(code, {language: 'javascript'}).value
     return `<pre class="language-js"><code>${code}</code></pre>`;
 }
 
 function html_to_code(html) {
-    let code = Prism.highlight(html, Prism.languages.html, 'html');
+    // let code = Prism.highlight(html, Prism.languages.html, 'html');
+    code = hljs.highlight(html, {language: 'html'}).value
     return `<pre class="language-html"><code>${code}</code></pre>`;
 }
 

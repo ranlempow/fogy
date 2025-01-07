@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<!-- <script>
+const mq_s = window.matchMedia("(width <= 600px)");
+const mq_m = window.matchMedia("(600px < width < 840px)");
+const mq_l = window.matchMedia("(width >= 840px)");
+mq_s.func = (e) => document.documentElement.classList[e.matches ? 'add' : 'remove']('size-s')
+mq_m.func = (e) => document.documentElement.classList[e.matches ? 'add' : 'remove']('size-m')
+mq_l.func = (e) => document.documentElement.classList[e.matches ? 'add' : 'remove']('size-l')
+for (const mq of [mq_s, mq_m, mq_l]) {
+    mq.addEventListener("change", mq.func);
+    mq.func(mq);
+}
+</script> -->
+
+<script src="../lib/lifecycle.js"></script>
+
+
+
+
+
+<style>
+
+
+
+.main {
+
+    --content-space: 400px;
+    --secondary-space: 0.7fr;
+    --auxiliary-space: 0.3fr;
+
+    --left-side-width: 0px;
+    --right-side-width: 0px;
+
+    display: grid;
+    grid-auto-flow: row dense;
+    grid-template-columns:
+        [left-side] var(--left-side-width, auto)
+        [primary content-start] var(--content-space)
+        [secondary] var(--secondary-space)
+        [auxiliary] var(--auxiliary-space)
+        [right-side content-end] var(--right-side-width, auto);
+    grid-template-rows: repeat(20, auto) minmax(min-content, auto) 0fr;
+    min-height: 100vh;
+
+    & .block {
+        container: block-container / inline-size;
+    }
+    & > * {
+        grid-column: primary / span 1;
+    }
+
+    & > .secondary {
+        grid-column: secondary / span 1;
+        grid-row: auto / span 15;
+        /* container: column-container / inline-size; */
+    }
+    & > .auxiliary {
+        grid-column: auxiliary / span 1;
+        grid-row: auto / span 15;
+        /* container: column-container / inline-size; */
+    }
+    & > .secondary,
+    & > .auxiliary {
+        display: flex;
+        flex-direction: column;
+    }
+
+    & > :where(.top-side, .bottom-side)
+    {
+        z-index: 1;
+        grid-column: 1 / -1;
+        &.fit {
+            grid-column: content-start / content-end;
+        }
+        &.sticky {
+            z-index: 2;
+            position: sticky;
+        }
+        &.sticky.top-side {
+            top: 0px;
+        }
+        &.sticky.bottom-side {
+            bottom: 0px;
+        }
+        &:nth-child(1 of .top-side) { grid-row: 1; }
+        &:nth-child(2 of .top-side) { grid-row: 2; }
+        &:nth-child(3 of .top-side) { grid-row: 3; }
+        &:nth-child(1 of .bottom-side) { grid-row: -3; }
+        &:nth-child(2 of .bottom-side) { grid-row: -2; }
+        &:nth-child(3 of .bottom-side) { grid-row: -1; }
+    }
+}
+
+.main :where(.left-side, .right-side),
+html.size-s .main :where(.left-side-s, .right-side-s),
+html.size-m .main :where(.left-side-m, .right-side-m),
+html.size-l .main :where(.left-side-l, .right-side-l)
+{
+    /* grid-row: 1 / -1;
+    position: sticky;
+    top: 0px;
+    z-index: 3;
+    height: 100vh; */
+
+    height: 100vh;
+    position: fixed;
+    z-index: 3;
+    top: 0px;
+
+    &.left-side, &.left-side-l {
+        left: 0px;
+        width: var(--left-side-width, auto);
+        grid-column: left-side;
+    }
+    &.right-side, &.right-side-l {
+        right: 0px;
+        width: var(--right-side-width, auto);
+        grid-column: right-side;
+    }
+}
+
+
+.main.open-pane,
+html.size-s .main {
+    --content-space: 1fr;
+
+    grid-template-columns:
+        [left-side] var(--left-side-width, 0px)
+        [primary secondary auxiliary content-start] var(--content-space)
+        [right-side content-end] var(--right-side-width, 0px)
+        ;
+}
+
+.main:is(.two-pane, .fold-pane),
+html.size-m .main {
+    --secondary-space: 1fr;
+
+    grid-template-columns:
+        [left-side] var(--left-side-width, 0px)
+        [primary content-start] var(--content-space)
+        [secondary auxiliary] var(--secondary-space)
+        [right-side content-end] var(--right-side-width, 0px)
+        ;
+
+    &.fold-pane {
+        --content-space: 0.5fr;
+        --secondary-space: 0.5fr;
+    }
+}
+
+
+.main > :is(.secondary, .auxiliary).dismiss,
+html.size-s .main > :is(.secondary, .auxiliary),
+html.size-m .main > .auxiliary,
+html.size-s .main > :is(.secondary, .auxiliary).dismiss-s,
+html.size-m .main > :is(.secondary, .auxiliary).dismiss-m,
+html.size-l .main > :is(.secondary, .auxiliary).dismiss-l
+{
+    display: contents;
+    & > * {
+        grid-column: primary / span 1;
+    }
+    /* & > *:not(.block) {
+        display: none;
+    }
+    & > .block {
+        grid-column: primary / span 1;
+    } */
+}
+
+html.size-s .hidden-s,
+html.size-m .hidden-m,
+html.size-l .hidden-l
+{
+    display: none;
+}
+
+
+</style>
+
+
+<style>
+body {
+    margin: 0px;
+}
+.wrapper {
+    background-color: cyan;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  max-height: min-content;
+}
+.wrapper > div {
+    height: 90px;
+    width: 90px;
+    margin: 5px;
+    background-color: gray;
+}
+.w {
+    flex: 0 1 fill;
+    flex-basis: fill;
+    /*flex-basis: 100%;*/
+    width: 0px;
+    page-break-before: always;
+}
+
+:root {
+  scrollbar-color: white blue;
+  scrollbar-width: thin;
+}
+
+
+@container block-container (max-width: 500px) {
+    * {
+        color: white;
+    }
+}
+
+.main {
+    --left-side-width: 75px;
+    --right-side-width: 75px;
+}
+html.size-m .main,
+html.size-s .main {
+    --left-side-width: 0px;
+    --right-side-width: 0px;
+}
+
+
+</style>
+
+
+<div class="main">
+    <div class="block top-side sticky" style="background-color: green;">
+        <h2>sticky1 - sticky1 - sticky1</h2>
+    </div>
+    <div class="block top-side sticky" style="background-color: green;">
+        <h2>sticky2 - sticky2 - sticky2</h2>
+    </div>
+    <div class="block top-side fit" style="background-color: green;">
+        <h2>sticky3 - sticky3 - sticky3</h2>
+    </div>
+        <div class="block" style="background-color: red;">
+            <h2>primary 1</h2>
+        </div>
+        <div class="block" style="background-color: red;">
+            <h2>primary 2</h2>
+        </div>
+    <div class="secondary dismiss-s" style="background-color: red; font-size: 12px;">
+        <div class="block" style="background-color: red;">
+            <h2>secondary 1</h2>
+        </div>
+        <div class="block" style="background-color: red; order: -1;">
+            <h2>secondary 2</h2>
+        </div>
+        <div class="block" style="background-color: red;">
+            <h2>secondary 3</h2>
+        </div>
+        <div class="block right-side-l sticky" style="background-color: blue;">
+            <h2>right-side</h2>
+        </div>
+    </div>
+    <div class="auxiliary" style="background-color: red;">
+        <div class="block" style="background-color: red;">
+            <h2>auxiliary 1</h2>
+        </div>
+    </div>
+    <div class="block left-side-l sticky" style="background-color: blue;">
+        <h2>left-side</h2>
+    </div>
+
+    <div class="block" style="background-color: red;">
+        <h2>primary 3</h2>
+    </div>
+<details class="block wrapper">
+    <summary>
+        <h2>wrapper</h2>
+    </summary>
+    <div>1</div>
+    <div>2</div>
+    <div class="w">3</div>
+    <div>4</div>
+    <div>5</div>
+    <div>6</div>
+    <div>7</div>
+    <div>8</div>
+    <div>9</div>
+    <div>10</div>
+</details>
+    <div class="block bottom-side sticky" style="background-color: green;">
+        <h2>bottom-side - bottom-side - bottom-side</h2>
+    </div>
+    <div class="block bottom-side" style="background-color: darkgreen;">
+        <h2>bottom-side2 - bottom-side2 - bottom-side2</h2>
+    </div>
+</div>
