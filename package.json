@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@fogyjs/fogy",
-  "version": "0.0.0",
+  "version": "0.0.14",
   "homepage": "https://fogy.gamelab.tw",
   "repository": {
     "type": "git",
@@ -9,10 +9,13 @@
   },
   "files": [
     "./dist/**",
-    "./fogy.js"
+    "./lib",
+    "./css",
+    "./fogy.js",
+    "./fogy.esm.js"
   ],
   "browser": "./dist/fogy.js",
   "exports": {
-    ".": "./fogy.js"
+    ".": "./fogy.esm.js"
   }
 }
