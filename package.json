@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "name": "@fogyjs/fogy",
+  "version": "0.0.0",
+  "homepage": "https://fogy.gamelab.tw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ranlempow/fogy.git"
+  },
+  "files": [
+    "./dist/**",
+    "./fogy.js"
+  ],
+  "browser": "./dist/fogy.js",
+  "exports": {
+    ".": "./fogy.js"
+  }
+}
